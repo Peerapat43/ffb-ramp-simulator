@@ -573,10 +573,22 @@
             .right-panel > .btn[onclick*="openAddBatch"] { display: none !important; }
         }
 
+        /* ===== LANDSCAPE ROTATE HINT ===== */
+        .rotate-hint {
+            display: none; position: fixed; top: 0; left: 0; right: 0;
+            background: linear-gradient(135deg, #1e3a5f, #2d5a87); color: #fff;
+            text-align: center; padding: 8px 16px; font-size: 0.78rem; z-index: 9998;
+            cursor: pointer;
+        }
+        .rotate-hint span { margin-right: 6px; }
+        @media (max-height: 500px) and (orientation: landscape) {
+            .rotate-hint { display: block; }
+        }
+
         /* ===== MOBILE LANDSCAPE (แนวนอน มือถือ) ===== */
         @media (max-height: 500px) and (orientation: landscape) {
             /* Header: single compact row */
-            .header { flex-direction: row; padding: 5px 10px; gap: 6px; align-items: center; }
+            .header { flex-direction: row; padding: 5px 10px; gap: 6px; align-items: center; margin-top: 34px; }
             .header h1 { font-size: 0.8rem; white-space: nowrap; }
             .header .sub { display: none; }
             .header-right { gap: 3px; flex-wrap: nowrap; }
@@ -758,6 +770,9 @@
 </head>
 <body>
 
+<div class="rotate-hint" onclick="this.style.display='none'">
+    <span>📱</span> แนะนำให้หมุนจอเป็นแนวตั้งเพื่อใช้งานได้ดีขึ้น &nbsp; ✕
+</div>
 <div class="header">
     <div>
         <h1>FFB Ramp Simulator</h1>
