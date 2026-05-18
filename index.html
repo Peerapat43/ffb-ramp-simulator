@@ -1302,6 +1302,23 @@ function updateLocationDropdowns() {
 let lockCfgTemp = { zoneA: [], zoneB: [] };
 let lockNextId = 100;
 
+// Lock body scroll when modal is open (prevents iOS scroll-through)
+function lockBodyScroll() {
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.width = '100%';
+    document.body.style.top = `-${window.scrollY}px`;
+    document.body.dataset.scrollY = window.scrollY;
+}
+function unlockBodyScroll() {
+    const scrollY = document.body.dataset.scrollY || '0';
+    document.body.style.overflow = '';
+    document.body.style.position = '';
+    document.body.style.width = '';
+    document.body.style.top = '';
+    window.scrollTo(0, parseInt(scrollY));
+}
+
 function openLockConfig() {
     lockCfgTemp = {
         zoneA: lockConfig.zoneA.map(l => ({...l})),
@@ -1309,9 +1326,10 @@ function openLockConfig() {
     };
     renderLockCfgRows();
     document.getElementById('lockConfigModal').classList.add('active');
+    lockBodyScroll();
 }
 
-function closeLockConfig() { document.getElementById('lockConfigModal').classList.remove('active'); }
+function closeLockConfig() { document.getElementById('lockConfigModal').classList.remove('active'); unlockBodyScroll(); }
 
 function renderLockCfgRows() {
     ['A','B'].forEach(zone => {
@@ -1528,9 +1546,10 @@ function updateDateDisplay() {
 function openAddBatch() {
     document.getElementById('addForm').reset();
     document.getElementById('addBatchModal').classList.add('active');
+    lockBodyScroll();
     setTimeout(() => document.getElementById('fSource').focus(), 100);
 }
-function closeAddBatch() { document.getElementById('addBatchModal').classList.remove('active'); }
+function closeAddBatch() { document.getElementById('addBatchModal').classList.remove('active'); unlockBodyScroll(); }
 
 function addBatch(e) {
     e.preventDefault();
@@ -1973,9 +1992,10 @@ function openEdit(slot, id) {
     document.getElementById('editInfo').innerHTML = info;
 
     document.getElementById('editModal').classList.add('active');
+    lockBodyScroll();
 }
 
-function closeEdit() { document.getElementById('editModal').classList.remove('active'); editSlot=null; editId=null; }
+function closeEdit() { document.getElementById('editModal').classList.remove('active'); unlockBodyScroll(); editSlot=null; editId=null; }
 
 const SVG_EYE_OPEN_SM = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
 const SVG_EYE_CLOSED_SM = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
@@ -2362,9 +2382,10 @@ function openBatchConfig() {
     document.getElementById('cfgBranch').value = batchConfig.branch;
     document.getElementById('cfgSub').value = batchConfig.sub;
     document.getElementById('batchConfigModal').classList.add('active');
+    lockBodyScroll();
 }
 
-function closeBatchConfig() { document.getElementById('batchConfigModal').classList.remove('active'); }
+function closeBatchConfig() { document.getElementById('batchConfigModal').classList.remove('active'); unlockBodyScroll(); }
 
 function onSourceChange() {
     const src = document.getElementById('fSource').value;
@@ -2485,10 +2506,12 @@ function openSplitPicker(from, to, batchId, dropIdx) {
 
     setSplitMode('all');
     document.getElementById('splitModal').classList.add('active');
+    lockBodyScroll();
 }
 
 function closeSplit() {
     document.getElementById('splitModal').classList.remove('active');
+    unlockBodyScroll();
     splitFrom = null; splitTo = null; splitBatchId = null; splitBatchRef = null;
 }
 
@@ -2594,10 +2617,12 @@ function openLockMovePicker(fromKey, toKey) {
     document.getElementById('lockMoveSelectAll').checked = true;
     updateLockMoveCount();
     document.getElementById('lockMoveModal').classList.add('active');
+    lockBodyScroll();
 }
 
 function closeLockMove() {
     document.getElementById('lockMoveModal').classList.remove('active');
+    unlockBodyScroll();
     lockMoveFrom = null; lockMoveTo = null;
 }
 
@@ -2667,8 +2692,9 @@ function openExportReport() {
     const content = document.getElementById('exportReportContent');
     content.innerHTML = buildReportHTML();
     document.getElementById('exportOverlay').classList.add('active');
+    lockBodyScroll();
 }
-function closeExportReport() { document.getElementById('exportOverlay').classList.remove('active'); }
+function closeExportReport() { document.getElementById('exportOverlay').classList.remove('active'); unlockBodyScroll(); }
 
 function buildReportHTML() {
     const selDate = new Date(currentDate + 'T00:00:00');
