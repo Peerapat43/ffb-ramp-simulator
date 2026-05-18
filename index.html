@@ -553,66 +553,77 @@
             .right-panel > .btn[onclick*="openAddBatch"] { display: none !important; }
         }
 
-        /* ===== MOBILE LANDSCAPE (แนวนอน) ===== */
+        /* ===== MOBILE LANDSCAPE (แนวนอน มือถือ) ===== */
         @media (max-height: 500px) and (orientation: landscape) {
             /* Header: single compact row */
-            .header { flex-direction: row; padding: 6px 12px; gap: 8px; }
-            .header h1 { font-size: 0.85rem; }
+            .header { flex-direction: row; padding: 5px 10px; gap: 6px; align-items: center; }
+            .header h1 { font-size: 0.8rem; white-space: nowrap; }
             .header .sub { display: none; }
-            .header-right { gap: 4px; }
-            .hdr-pill { font-size: 0.65rem; padding: 4px 7px; }
-            .hdr-nav-btn { width: 28px; height: 28px; font-size: 0.75rem; min-width: 28px; }
+            .header-right { gap: 3px; flex-wrap: nowrap; }
+            .hdr-pill { font-size: 0.6rem; padding: 3px 6px; }
+            .hdr-nav-btn { width: 26px; height: 26px; font-size: 0.7rem; min-width: 26px; }
 
-            /* Main: side-by-side, compact */
-            .main { padding: 4px; gap: 6px; flex-direction: row !important; }
-            .left-panel { flex: 2; }
-            .right-panel { flex: 1; flex-direction: column; width: auto; max-height: calc(100vh - 60px); overflow-y: auto; }
+            /* Main: full width single column, scroll vertically */
+            .main { padding: 4px; gap: 4px; flex-direction: column !important; }
+            .left-panel { width: 100%; }
+            .right-panel { width: 100%; flex-direction: column; display: none; }
 
-            /* Capture bar: compact */
-            .capture-bar { gap: 4px; }
-            .capture-bar .btn { padding: 5px 8px; font-size: 0.65rem; }
-            .capture-bar .section-title { font-size: 0.78rem; }
+            /* Hide duplicate New Batch (right panel) */
+            .right-panel > .btn[onclick*="openAddBatch"] { display: none !important; }
+            /* Show mobile New Batch */
+            .mobile-new-batch { display: block !important; padding: 7px !important; font-size: 0.75rem !important; }
 
-            /* Ramp: horizontal layout (not stacked) */
+            /* Capture bar: inline compact */
+            .capture-bar { gap: 3px; flex-wrap: nowrap; }
+            .capture-bar .btn { padding: 4px 8px; font-size: 0.62rem; white-space: nowrap; }
+            .capture-bar .section-title { font-size: 0.72rem; white-space: nowrap; }
+
+            /* Ramp: HORIZONTAL like desktop */
             .topview { flex-direction: row !important; gap: 0 !important; }
-            .ramp-divider { width: 6px !important; height: auto !important; min-height: 120px; }
-            .zone-labels { flex-direction: row; }
-            .zlabel { font-size: 0.65rem; padding: 3px 8px; }
+            .ramp-divider { width: 5px !important; height: auto !important; min-height: 100px; margin: 0 !important; }
+            .ramp-divider::after { transform: translate(-50%,-50%) rotate(0deg) !important; }
+            .zone-a, .zone-b { flex: 1 !important; padding: 0 !important; }
+            .zone-labels { flex-direction: row; gap: 4px; }
+            .zlabel { font-size: 0.6rem; padding: 3px 8px; flex: 1; text-align: center; }
 
-            /* Columns: compact */
-            .columns-row { min-height: 140px; gap: 3px; }
-            .v-col { min-width: 70px; min-height: 120px; }
-            .v-col-header .col-name { font-size: 0.7rem; }
-            .v-col-header .col-badge { font-size: 0.55rem; }
+            /* Columns: compact, scrollable */
+            .columns-row { min-height: 110px; gap: 2px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+            .v-col { min-width: 65px; min-height: 100px; flex-shrink: 0; }
+            .v-col-header .col-name { font-size: 0.65rem; font-weight: 800; }
+            .v-col-header .col-badge { font-size: 0.5rem; }
 
-            /* Batch cards: smaller */
-            .batch-card { padding: 4px 5px; margin-bottom: 2px; }
-            .batch-card .b-code { font-size: 0.68rem; }
-            .batch-card .b-weight { font-size: 0.58rem; }
-            .batch-card .b-source { font-size: 0.52rem; }
-            .batch-card .b-from { font-size: 0.5rem; }
+            /* Batch cards: compact */
+            .batch-card { padding: 3px 4px; margin-bottom: 2px; border-radius: 5px; }
+            .batch-card .b-code { font-size: 0.62rem; }
+            .batch-card .b-weight { font-size: 0.52rem; }
+            .batch-card .b-source { font-size: 0.48rem; }
+            .batch-card .b-from { font-size: 0.46rem; }
 
             /* Hopper */
-            .hopper-top { padding: 4px; }
-            .hopper-col { min-width: 80px; }
+            .hopper-top { padding: 3px; }
+            .hopper-col { min-width: 75px; }
+            .hopper-batches { gap: 2px; }
 
             /* Zone totals */
-            .zone-total-bar { font-size: 0.62rem; padding: 3px 6px; }
-            .v-col-footer { font-size: 0.58rem; }
+            .zone-total-bar { font-size: 0.58rem; padding: 3px 5px; }
+            .v-col-footer { font-size: 0.52rem; padding: 2px; }
 
             /* Buttons */
-            .btn { padding: 6px 10px; font-size: 0.7rem; }
-            .mobile-new-batch { display: block !important; padding: 8px !important; font-size: 0.78rem !important; }
-
-            /* Cards/sections */
-            .card { padding: 8px; margin-bottom: 6px; }
-            .section-title { font-size: 0.78rem; }
-
-            /* Gear: smaller */
-            .slot-gear-btn { width: 22px; height: 22px; font-size: 0.65rem; }
+            .btn { padding: 5px 8px; font-size: 0.65rem; border-radius: 6px; }
 
             /* Ramp container */
-            .ramp-container { padding: 4px; }
+            .ramp-container { padding: 3px; }
+
+            /* Gear: smaller */
+            .slot-gear-btn { width: 20px; height: 20px; font-size: 0.6rem; }
+            .slot-gear-wrap { display: none !important; }
+
+            /* Source bar */
+            .source-bar { gap: 2px; }
+            .source-bar span { font-size: 0.5rem !important; padding: 1px 4px !important; }
+
+            /* Summary/cards below ramp: hide in landscape to save space */
+            .left-panel > .card { display: none; }
         }
 
         /* ===== EXPORT REPORT MODAL ===== */
