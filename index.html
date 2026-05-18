@@ -529,14 +529,27 @@
             .source-bar { flex-wrap: wrap; gap: 4px; }
 
             /* Export overlay */
-            .export-overlay { padding: 6px; }
-            .export-wrap { border-radius: 8px; }
-            .export-toolbar { padding: 10px 12px; flex-wrap: wrap; gap: 6px; }
-            .export-toolbar h2 { font-size: 0.92rem; width: 100%; }
+            .export-overlay { padding: 4px; }
+            .export-wrap { border-radius: 8px; max-height: 95vh; overflow-y: auto; }
+            .export-toolbar { padding: 8px 10px; flex-wrap: wrap; gap: 5px; }
+            .export-toolbar h2 { font-size: 0.88rem; width: 100%; }
+            .export-toolbar .btn { font-size: 0.7rem; padding: 6px 10px; }
             #exportReportContent { padding: 10px; }
+            .rpt-header { flex-direction: column; gap: 6px; text-align: center; }
+            .rpt-header h1 { font-size: 1rem; }
+            .rpt-header-right { text-align: center; font-size: 0.75rem; }
+            .rpt-batch-pills { justify-content: center; }
             .rpt-zones { flex-direction: column; gap: 10px; }
+            .rpt-zone { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+            .rpt-table { font-size: 0.7rem; min-width: 360px; }
+            .rpt-table th { padding: 5px 6px; font-size: 0.65rem; }
+            .rpt-table td { padding: 4px 6px; }
+            .rpt-batch-tag { font-size: 0.62rem; padding: 2px 4px; }
+            .rpt-zone-title { font-size: 0.8rem; padding: 6px 10px; }
             .rpt-summary-grid { flex-direction: column; gap: 8px; }
-            .rpt-table { font-size: 0.68rem; }
+            .rpt-total-row td { font-size: 0.72rem !important; }
+            .rpt-source-bar { flex-wrap: wrap; gap: 4px; }
+            .rpt-source-bar span { font-size: 0.6rem !important; }
 
             /* New batch button: full width and prominent */
             .card .btn { width: 100%; }
