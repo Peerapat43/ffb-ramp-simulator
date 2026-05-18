@@ -1,0 +1,2956 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FFB Ramp Simulator - Top View</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #edf2f7; color: #1a202c; }
+
+        .header {
+            background: linear-gradient(135deg, #1e3a5f, #2d5a87);
+            color: #fff; padding: 14px 28px;
+            display: flex; align-items: center; justify-content: space-between;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        .header h1 { font-size: 1.3rem; }
+        .header .sub { font-size: 0.8rem; opacity: 0.75; }
+        .header-right { display: flex; gap: 12px; align-items: center; }
+        .hdr-pill { padding: 5px 12px; border-radius: 6px; font-size: 0.8rem; }
+        .hdr-date { background: rgba(255,255,255,0.15); transition: background 0.15s; }
+        .hdr-date:hover { background: rgba(255,255,255,0.3); }
+        .hdr-nav-btn {
+            background: rgba(255,255,255,0.12); border: none; color: #fff; width: 26px; height: 26px;
+            border-radius: 6px; cursor: pointer; font-size: 0.7rem; display: flex; align-items: center;
+            justify-content: center; transition: background 0.15s;
+        }
+        .hdr-nav-btn:hover { background: rgba(255,255,255,0.3); }
+        .hdr-date-today { font-size: 0.6rem; background: #48bb78; color: #fff; padding: 1px 6px; border-radius: 3px; margin-left: 4px; cursor: pointer; }
+        .hdr-date-indicator { font-size: 0.55rem; opacity: 0.7; display: block; text-align: center; margin-top: 1px; }
+        .hdr-batch { background: #f6ad55; color: #1a202c; font-weight: 600; }
+
+        .main { display: flex; gap: 18px; padding: 18px; max-width: 1800px; margin: 0 auto; }
+        .left-panel { flex: 1; min-width: 0; }
+        .right-panel { width: 340px; flex-shrink: 0; display: flex; flex-direction: column; gap: 14px; }
+        .section-title { font-size: 1rem; font-weight: 700; margin-bottom: 10px; }
+
+        /* RAMP */
+        .ramp-container {
+            background: #dce3ec; border-radius: 14px; padding: 16px;
+            border: 2px solid #b0bec5;
+        }
+        .zone-labels { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .zlabel { font-weight: 700; font-size: 0.85rem; padding: 4px 14px; border-radius: 6px; }
+        .zlabel-a { background: #fed7d7; color: #c53030; }
+        .zlabel-b { background: #fefcbf; color: #975a16; }
+
+        .topview { display: flex; gap: 0; }
+
+        .ramp-divider {
+            width: 6px; background: #78909c; border-radius: 3px; position: relative; flex-shrink: 0;
+        }
+        .ramp-divider::after {
+            content: 'R A M P'; position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%,-50%) rotate(-90deg);
+            font-size: 0.6rem; font-weight: 800; color: #546e7a; letter-spacing: 2px; white-space: nowrap;
+        }
+
+        /* ZONE: Hopper C on top, then a row of [locks + hopper] as vertical columns */
+        .zone { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+        .zone-a { padding-right: 8px; }
+        .zone-b { padding-left: 8px; }
+
+        /* Hopper C stays horizontal at top */
+        .hopper-top {
+            border-radius: 10px; padding: 10px;
+            display: flex; flex-direction: column;
+            transition: all 0.2s; cursor: pointer; min-height: 60px;
+        }
+        .hopper-top.drag-over { box-shadow: 0 0 0 3px #9f7aea, 0 0 20px rgba(159,122,234,0.3); }
+        .hopper-c-bg { background: linear-gradient(135deg,#e9d8fd,#d6bcfa); border: 2px solid #9f7aea; }
+
+        .hopper-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .hopper-name { font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        .hopper-badge { font-size: 0.6rem; padding: 2px 7px; border-radius: 4px; font-weight: 700; background: #f6ad55; color: #fff; }
+        .hopper-batches { display: flex; flex-wrap: wrap; gap: 4px; flex: 1; min-height: 24px; }
+        .hopper-total { font-size: 0.7rem; color: #4a5568; font-weight: 600; text-align: right; margin-top: 4px; }
+
+        /* VERTICAL COLUMNS ROW: locks + hopper side by side */
+        .columns-row {
+            flex: 1; display: flex; gap: 6px; min-height: 340px;
+        }
+
+        /* Shared vertical column style for both locks and hoppers */
+        .v-col {
+            flex: 1; display: flex; flex-direction: column;
+            border-radius: 10px; min-height: 280px;
+            transition: all 0.2s; position: relative;
+        }
+        .v-col.drag-over { box-shadow: 0 0 0 3px #4299e1, 0 0 16px rgba(66,153,225,0.3); }
+
+        /* Lock column */
+        .v-col.lock-style { background: #fff; border: 2px solid #e2e8f0; }
+        .v-col.lock-style.has-batch { background: #fffef0; border-color: #ecc94b; }
+        .v-col.lock-style.empty { background: #f7fafc; border-style: dashed; }
+        .v-col.lock-style.drag-over { box-shadow: 0 0 0 3px #ecc94b, 0 0 16px rgba(236,201,75,0.3); }
+
+        /* Hopper A vertical column */
+        .v-col.hopper-a-style {
+            background: linear-gradient(180deg,#c6f6d5,#9ae6b4);
+            border: 2px solid #48bb78;
+        }
+        .v-col.hopper-a-style.drag-over { box-shadow: 0 0 0 3px #48bb78, 0 0 16px rgba(72,187,120,0.3); }
+
+        /* Hopper B vertical column */
+        .v-col.hopper-b-style {
+            background: linear-gradient(180deg,#bee3f8,#90cdf4);
+            border: 2px solid #4299e1;
+        }
+        .v-col.hopper-b-style.drag-over { box-shadow: 0 0 0 3px #4299e1, 0 0 16px rgba(66,153,225,0.3); }
+
+        .v-col-header {
+            padding: 8px 6px; text-align: center;
+            border-bottom: 1px solid rgba(0,0,0,0.1); flex-shrink: 0;
+        }
+        .v-col.lock-style .v-col-header {
+            cursor: grab;
+        }
+        .v-col.lock-style .v-col-header:active { cursor: grabbing; }
+        .v-col.lock-style.has-batch .v-col-header:hover {
+            background: rgba(236,201,75,0.15);
+            border-radius: 8px 8px 0 0;
+        }
+        .v-col.lock-dragging { opacity: 0.4; transform: scale(0.97); }
+
+        /* Delete drop zone on headers */
+        .v-col-header.delete-hover, .hopper-header.delete-hover {
+            background: #fed7d7 !important;
+            border-radius: 8px 8px 0 0;
+            outline: 2px dashed #e53e3e;
+            outline-offset: -2px;
+        }
+        .v-col-header.delete-hover::after, .hopper-header.delete-hover::after {
+            content: '🗑 ลบ Batch';
+            display: block;
+            font-size: 0.65rem;
+            color: #c53030;
+            font-weight: 700;
+            margin-top: 2px;
+        }
+        .v-col-header .col-name {
+            font-weight: 800; font-size: 0.9rem; color: #2d3748;
+            writing-mode: horizontal-tb;
+        }
+        .v-col-header .col-badge { font-size: 0.6rem; display: block; margin-top: 2px; color: #a0aec0; font-weight: 600; }
+        .v-col-header .col-badge.active { color: #d69e2e; }
+        .v-col-header .col-badge.hopper-badge-sm { color: #fff; background: #f6ad55; display: inline-block; padding: 1px 5px; border-radius: 3px; }
+
+        .v-col-body {
+            flex: 1; padding: 6px; display: flex; flex-direction: column; gap: 4px;
+            overflow-y: auto;
+        }
+        .v-col-footer { padding: 4px 6px; font-size: 0.68rem; color: #718096; font-weight: 600; text-align: center; border-top: 1px solid rgba(0,0,0,0.08); }
+
+        .col-empty { color: #cbd5e0; font-size: 0.75rem; text-align: center; margin: auto; }
+
+        /* BATCH CARD */
+        .batch-card {
+            background: #fff; border: 1.5px solid #e2e8f0; border-radius: 8px;
+            padding: 6px 8px; cursor: grab; transition: all 0.15s;
+            user-select: none;
+        }
+        .batch-card:hover { border-color: #90cdf4; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .batch-card.dragging { opacity: 0.3; transform: scale(0.95); }
+
+        /* Drop indicator line */
+        .drop-indicator {
+            height: 3px; background: #4299e1; border-radius: 2px;
+            margin: 2px 0; flex-shrink: 0;
+            box-shadow: 0 0 6px rgba(66,153,225,0.5);
+            animation: pulse-line 0.8s ease-in-out infinite alternate;
+        }
+        @keyframes pulse-line { from { opacity: 0.6; } to { opacity: 1; } }
+        .batch-card .b-code { font-weight: 700; font-size: 0.78rem; color: #2b6cb0; }
+        .batch-card .b-weight { font-size: 0.68rem; color: #718096; }
+        .batch-card .b-source { font-size: 0.6rem; color: #a0aec0; }
+        .batch-card .b-from { font-size: 0.58rem; color: #e53e3e; font-weight: 600; margin-top: 2px; }
+        .batch-card.src-buying { border-left: 4px solid #ed8936; }
+        .batch-card.src-branch { border-left: 4px solid #9f7aea; }
+        .batch-card.src-sub { border-left: 4px solid #48bb78; }
+        .batch-card.batch-hidden { opacity: 0.45; background: #f0f0f0; border-style: dashed; }
+        .batch-card.batch-hidden .b-code::after { content: ' 🚫'; font-size: 0.65rem; }
+
+        .eye-toggle {
+            position: absolute; top: 14px; right: 14px; z-index: 2;
+            border: 1.5px solid #e2e8f0; background: #f7fafc;
+            border-radius: 6px; padding: 4px 10px;
+            font-size: 0.72rem; font-weight: 600; cursor: pointer;
+            display: flex; align-items: center; gap: 5px;
+            color: #4a5568; transition: all 0.15s;
+        }
+        .eye-toggle:hover { background: #edf2f7; border-color: #a0aec0; }
+        .eye-toggle.is-hidden { background: #fed7d7; border-color: #fc8181; color: #c53030; }
+        .eye-toggle svg { width: 16px; height: 16px; }
+
+        /* Hopper name label rotated vertically inside tall column */
+        /* Slot gear menu */
+        .slot-gear-wrap { position: absolute; top: 4px; right: 4px; z-index: 12; }
+        .slot-gear-btn {
+            width: 22px; height: 22px; border-radius: 4px; border: none;
+            background: rgba(0,0,0,0.06); color: #718096; cursor: pointer;
+            font-size: 0.7rem; display: none; align-items: center; justify-content: center;
+            transition: all 0.15s;
+        }
+        .slot-gear-btn:hover { background: rgba(0,0,0,0.12); color: #2d3748; }
+        .v-col:hover .slot-gear-btn, .hopper-top:hover .slot-gear-btn { display: flex; }
+        .slot-gear-wrap.open .slot-gear-btn { display: flex; background: #4a5568; color: #fff; }
+        .slot-gear-menu {
+            display: none; position: absolute; top: 26px; right: 0;
+            background: #fff; border: 1px solid #e2e8f0; border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15); min-width: 140px; overflow: hidden; z-index: 20;
+        }
+        .slot-gear-wrap.open .slot-gear-menu { display: block; }
+        .slot-gear-item {
+            display: flex; align-items: center; gap: 6px; padding: 8px 12px;
+            font-size: 0.75rem; font-weight: 600; cursor: pointer; border: none;
+            background: none; width: 100%; text-align: left; color: #4a5568; transition: background 0.1s;
+        }
+        .slot-gear-item:hover { background: #f7fafc; }
+        .slot-gear-item.danger { color: #e53e3e; }
+        .slot-gear-item.danger:hover { background: #fff5f5; }
+
+        .v-col .hopper-vlabel {
+            writing-mode: vertical-rl; text-orientation: mixed;
+            font-weight: 800; font-size: 1rem; color: rgba(0,0,0,0.08);
+            position: absolute; top: 50%; right: 4px; transform: translateY(-50%);
+            letter-spacing: 4px; pointer-events: none;
+        }
+
+        .flow-label { text-align: center; font-size: 0.7rem; color: #a0aec0; font-weight: 600; padding: 2px 0; }
+
+        .zone-total {
+            background: linear-gradient(135deg, #ecc94b, #f6e05e);
+            border-radius: 8px; padding: 8px 14px; margin-top: 6px;
+            font-size: 0.78rem; font-weight: 700; color: #744210;
+        }
+        .zone-total .zt-label { font-size: 0.72rem; }
+        .zone-total .zt-value { font-size: 0.9rem; }
+
+        /* CARD */
+        .card { background: #fff; border-radius: 12px; padding: 16px; border: 1px solid #e2e8f0; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
+        .card h3 { font-size: 0.9rem; font-weight: 700; margin-bottom: 10px; }
+
+        /* FORM */
+        .fg { margin-bottom: 10px; }
+        .fg label { display: block; font-size: 0.75rem; font-weight: 600; color: #4a5568; margin-bottom: 3px; }
+        .fg input, .fg select { width: 100%; padding: 7px 10px; border: 1.5px solid #e2e8f0; border-radius: 7px; font-size: 0.82rem; }
+        .fg input:focus, .fg select:focus { outline: none; border-color: #4299e1; box-shadow: 0 0 0 3px rgba(66,153,225,0.12); }
+        .frow { display: flex; gap: 8px; }
+        .frow .fg { flex: 1; }
+
+        .btn { padding: 9px 16px; border: none; border-radius: 7px; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+        .btn-primary { background: linear-gradient(135deg,#4299e1,#3182ce); color: #fff; width: 100%; }
+        .btn-primary:hover { background: linear-gradient(135deg,#3182ce,#2b6cb0); }
+        .btn-danger { background: #fed7d7; color: #c53030; }
+        .btn-sm { padding: 3px 8px; font-size: 0.7rem; }
+
+        .move-log { max-height: 180px; overflow-y: auto; }
+        .log-item { padding: 5px 0; border-bottom: 1px solid #f7fafc; font-size: 0.75rem; color: #4a5568; }
+        .log-item .log-arrow { color: #e53e3e; font-weight: 700; }
+
+        .stbl { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+        .stbl th { background: #edf2f7; padding: 5px 8px; text-align: left; font-weight: 600; color: #4a5568; border-bottom: 2px solid #e2e8f0; }
+        .stbl td { padding: 5px 8px; border-bottom: 1px solid #f7fafc; }
+
+        /* FIFO per-hopper */
+        .fifo-hopper { margin-bottom: 12px; }
+        .fifo-hopper:last-child { margin-bottom: 0; }
+        .fifo-hdr { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+        .fifo-hdr-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+        .fifo-hdr-name { font-weight: 700; font-size: 0.8rem; color: #2d3748; }
+        .fifo-hdr-total { font-size: 0.68rem; color: #a0aec0; margin-left: auto; }
+        .fifo-empty { font-size: 0.72rem; color: #cbd5e0; text-align: center; padding: 6px; }
+        .fifo-row {
+            display: flex; align-items: center; gap: 6px; padding: 5px 6px;
+            border-radius: 6px; margin-bottom: 3px; background: #f7fafc;
+            transition: background 0.15s;
+        }
+        .fifo-row:hover { background: #edf2f7; }
+        .fifo-row.fifo-next { background: #fffbeb; border: 1px solid #f6e05e; }
+        .fifo-num {
+            width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 0.7rem; font-weight: 800; flex-shrink: 0; color: #fff;
+        }
+        .fifo-num.n1 { background: #e53e3e; }
+        .fifo-num.n2 { background: #dd6b20; }
+        .fifo-num.n3 { background: #d69e2e; }
+        .fifo-num.nrest { background: #a0aec0; }
+        .fifo-code { font-weight: 700; font-size: 0.78rem; color: #2b6cb0; flex: 1; }
+        .fifo-wt { font-size: 0.7rem; color: #718096; white-space: nowrap; }
+        .fifo-from { font-size: 0.6rem; color: #e53e3e; font-weight: 600; }
+        .fifo-btn { padding: 2px 8px; font-size: 0.65rem; background: #fed7d7; color: #c53030; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; flex-shrink: 0; }
+        .fifo-btn:hover { background: #feb2b2; }
+
+        .legend { display: flex; flex-wrap: wrap; gap: 10px; }
+        .legend-item { display: flex; align-items: center; gap: 4px; font-size: 0.72rem; color: #4a5568; }
+        .ldot { width: 10px; height: 10px; border-radius: 2px; }
+
+        .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-bg.active { display: flex; }
+        .modal { background: #fff; border-radius: 14px; padding: 20px; max-width: 450px; width: 92%; box-shadow: 0 16px 48px rgba(0,0,0,0.2); }
+        .modal h3 { margin-bottom: 14px; }
+
+        .toast { position: fixed; bottom: 18px; right: 18px; background: #2d3748; color: #fff; padding: 10px 18px; border-radius: 8px; font-size: 0.82rem; z-index: 2000; transform: translateY(80px); opacity: 0; transition: all 0.3s; }
+        .toast.show { transform: translateY(0); opacity: 1; }
+
+        /* CAPTURE AREA */
+        .capture-bar { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+        .btn-capture { background: linear-gradient(135deg,#ed8936,#dd6b20); color: #fff; display: inline-flex; align-items: center; gap: 6px; }
+        .btn-capture:hover { background: linear-gradient(135deg,#dd6b20,#c05621); }
+        .btn-share { background: linear-gradient(135deg,#48bb78,#38a169); color: #fff; display: inline-flex; align-items: center; gap: 6px; }
+        .btn-share:hover { background: linear-gradient(135deg,#38a169,#2f855a); }
+
+        /* Watermark for captured image */
+        .capture-watermark {
+            display: none; padding: 8px 16px; background: #1e3a5f; color: #fff;
+            font-size: 0.8rem; border-radius: 0 0 10px 10px;
+        }
+        .capturing .capture-watermark { display: flex; justify-content: space-between; align-items: center; }
+
+        /* Preview overlay */
+        .preview-overlay {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+            z-index: 3000; align-items: center; justify-content: center; flex-direction: column; gap: 16px;
+        }
+        .preview-overlay.active { display: flex; }
+        .preview-overlay img { max-width: 90vw; max-height: 70vh; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
+        .preview-actions { display: flex; gap: 10px; }
+        .preview-actions .btn { padding: 12px 24px; font-size: 0.9rem; }
+
+        /* EDIT MODAL */
+        .edit-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 1100; align-items: center; justify-content: center; }
+        .edit-modal.active { display: flex; }
+        .edit-box {
+            background: #fff; border-radius: 16px; padding: 24px; width: 360px; max-width: 92%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+        }
+        .edit-box h3 { font-size: 1rem; margin-bottom: 16px; color: #2d3748; }
+        .edit-box .edit-fg { margin-bottom: 12px; }
+        .edit-box .edit-fg label { display: block; font-size: 0.75rem; font-weight: 600; color: #4a5568; margin-bottom: 3px; }
+        .edit-box .edit-fg input, .edit-box .edit-fg select {
+            width: 100%; padding: 8px 10px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem;
+        }
+        .edit-box .edit-fg input:focus, .edit-box .edit-fg select:focus { outline: none; border-color: #4299e1; box-shadow: 0 0 0 3px rgba(66,153,225,0.12); }
+        .edit-actions { display: flex; gap: 8px; margin-top: 18px; }
+        .edit-actions .btn { flex: 1; text-align: center; justify-content: center; display: flex; }
+        .btn-save { background: linear-gradient(135deg,#48bb78,#38a169); color: #fff; }
+        .btn-save:hover { background: linear-gradient(135deg,#38a169,#2f855a); }
+        .btn-delete { background: #fed7d7; color: #c53030; }
+        .btn-delete:hover { background: #feb2b2; }
+        .btn-close { background: #edf2f7; color: #4a5568; }
+        .edit-info { font-size: 0.72rem; color: #a0aec0; margin-top: 6px; }
+        .edit-info span { color: #e53e3e; font-weight: 600; }
+
+        /* Slot hidden */
+        .slot-hidden { opacity: 0.4; }
+        .slot-hidden .v-col-header, .slot-hidden .hopper-header { background: repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(0,0,0,0.03) 4px, rgba(0,0,0,0.03) 8px); }
+
+        /* Split option buttons */
+        .split-opt {
+            background: #edf2f7; color: #4a5568; border: 2px solid #e2e8f0;
+            font-weight: 600; font-size: 0.82rem; padding: 8px; border-radius: 8px; cursor: pointer;
+            transition: all 0.15s;
+        }
+        .split-opt:hover { border-color: #90cdf4; }
+        .split-opt.active { background: #ebf8ff; color: #2b6cb0; border-color: #4299e1; }
+
+        /* Lock move picker */
+        .lm-item {
+            display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+            background: #f7fafc; border-radius: 6px; border: 1.5px solid #e2e8f0;
+            cursor: pointer; transition: all 0.15s;
+        }
+        .lm-item:hover { border-color: #90cdf4; }
+        .lm-item.checked { background: #ebf8ff; border-color: #4299e1; }
+        .lm-item input[type=checkbox] { width: 16px; height: 16px; cursor: pointer; flex-shrink: 0; }
+        .lm-item .lm-info { flex: 1; }
+        .lm-item .lm-code { font-weight: 700; font-size: 0.82rem; color: #2b6cb0; }
+        .lm-item .lm-detail { font-size: 0.7rem; color: #718096; }
+        .lm-item.src-buying { border-left: 4px solid #ed8936; }
+        .lm-item.src-branch { border-left: 4px solid #9f7aea; }
+        .lm-item.src-sub { border-left: 4px solid #48bb78; }
+
+        /* Lock config rows */
+        .lcfg-row {
+            display: flex; align-items: center; gap: 6px; margin-bottom: 6px;
+            padding: 6px 8px; background: #f7fafc; border-radius: 6px; border: 1px solid #e2e8f0;
+        }
+        .lcfg-row .lcfg-key { font-size: 0.7rem; color: #a0aec0; width: 32px; text-align: center; flex-shrink: 0; }
+        .lcfg-row input { flex: 1; padding: 5px 8px; border: 1.5px solid #e2e8f0; border-radius: 5px; font-size: 0.82rem; font-weight: 600; }
+        .lcfg-row input:focus { border-color: #4299e1; outline: none; }
+        .lcfg-del { background: #fed7d7; border: none; color: #c53030; border-radius: 4px; width: 24px; height: 24px; cursor: pointer; font-size: 0.8rem; flex-shrink: 0; }
+        .lcfg-del:hover { background: #fc8181; color: #fff; }
+
+        @media (max-width: 1200px) {
+            .main { flex-direction: column; }
+            .right-panel { width: 100%; flex-direction: row; flex-wrap: wrap; }
+            .card { flex: 1; min-width: 280px; }
+        }
+
+        /* ===== MOBILE (phone in field) ===== */
+        @media (max-width: 600px) {
+            /* Header: compact mobile layout */
+            .header { flex-direction: column; gap: 6px; padding: 10px 12px; text-align: center; }
+            .header h1 { font-size: 1rem; margin: 0; }
+            .header .sub { font-size: 0.65rem; display: none; }
+            .header-right { flex-wrap: wrap; justify-content: center; gap: 5px; }
+            .hdr-pill { font-size: 0.72rem; padding: 5px 9px; }
+            .hdr-nav-btn { width: 36px; height: 36px; font-size: 0.9rem; min-width: 36px; }
+            #dateDisplay { font-size: 0.78rem !important; }
+
+            /* Main layout */
+            .main { padding: 6px; gap: 8px; }
+            .left-panel, .right-panel { width: 100%; }
+            .right-panel { flex-direction: column; }
+
+            /* Capture bar: wrap buttons */
+            .capture-bar { gap: 5px; flex-wrap: wrap; }
+            .capture-bar .btn { padding: 9px 10px; font-size: 0.75rem; flex: 1; min-width: 0; text-align: center; white-space: nowrap; }
+            .capture-bar .section-title { width: 100%; font-size: 0.88rem; margin-bottom: 2px; }
+
+            /* Ramp container */
+            .ramp-container { padding: 6px; }
+            .zone-labels { flex-direction: row; gap: 6px; align-items: center; justify-content: center; }
+            .zlabel { font-size: 0.72rem; padding: 5px 12px; flex: 1; text-align: center; }
+
+            /* Topview: stack zones vertically on small screens */
+            .topview { flex-direction: column; gap: 8px; }
+            .ramp-divider { width: 100%; height: 6px; margin: 2px 0; }
+            .ramp-divider::after { transform: translate(-50%,-50%) rotate(0deg); }
+            .zone-a, .zone-b { padding: 0; }
+
+            /* Columns row: horizontal scroll with snap */
+            .columns-row { min-height: 200px; gap: 3px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; }
+            .v-col { min-width: 85px; min-height: 180px; flex-shrink: 0; }
+
+            /* Hopper columns: full width on mobile */
+            .hopper-col { min-width: 100px; }
+
+            /* Lock/Hopper headers */
+            .v-col-header .col-name { font-size: 0.82rem; font-weight: 800; }
+            .v-col-header .col-badge { font-size: 0.62rem; }
+
+            /* Batch cards: BIGGER tap targets */
+            .batch-card { padding: 8px 8px; margin-bottom: 3px; border-radius: 7px; cursor: pointer; }
+            .batch-card .b-code { font-size: 0.82rem; font-weight: 700; }
+            .batch-card .b-weight { font-size: 0.72rem; }
+            .batch-card .b-source { font-size: 0.65rem; }
+            .batch-card .b-from { font-size: 0.62rem; }
+
+            /* Hopper top */
+            .hopper-top { padding: 6px; }
+            .hopper-batches { gap: 3px; }
+
+            /* Gear menu: always show on mobile (no hover needed) */
+            .slot-gear-wrap { display: flex !important; }
+            .slot-gear-btn { display: flex !important; width: 28px; height: 28px; font-size: 0.8rem; opacity: 0.7; }
+            .slot-gear-menu { min-width: 150px; right: 0; }
+            .slot-gear-item { padding: 10px 14px; font-size: 0.82rem; }
+
+            /* Buttons: bigger for thumbs */
+            .btn { padding: 11px 14px; font-size: 0.82rem; border-radius: 8px; }
+
+            /* Section titles */
+            .section-title { font-size: 0.92rem; }
+
+            /* Card sections */
+            .card { padding: 12px; margin-bottom: 8px; }
+
+            /* FIFO panel */
+            .fifo-row { padding: 8px 6px; font-size: 0.8rem; }
+            .fifo-btn { padding: 8px 14px; font-size: 0.78rem; }
+
+            /* Log items */
+            .log-item { font-size: 0.75rem; padding: 7px 6px; }
+
+            /* Modals: near full-screen on mobile */
+            .edit-modal { width: 95vw !important; max-height: 90vh; overflow-y: auto; border-radius: 12px; padding: 16px !important; }
+            .edit-modal h3 { font-size: 1rem; }
+            .edit-modal label { font-size: 0.85rem; }
+            .edit-modal input, .edit-modal select { font-size: 16px; padding: 10px; border-radius: 8px; }
+            .edit-modal .btn { padding: 12px 16px; font-size: 0.9rem; width: 100%; }
+
+            /* Summary tables */
+            .summary-table { font-size: 0.73rem; }
+            .summary-table td, .summary-table th { padding: 5px 4px; }
+
+            /* Zone totals */
+            .zone-total-bar { font-size: 0.73rem; padding: 5px 8px; }
+
+            /* Source breakdown badges */
+            .source-bar { flex-wrap: wrap; gap: 4px; }
+
+            /* Export overlay */
+            .export-overlay { padding: 6px; }
+            .export-wrap { border-radius: 8px; }
+            .export-toolbar { padding: 10px 12px; flex-wrap: wrap; gap: 6px; }
+            .export-toolbar h2 { font-size: 0.92rem; width: 100%; }
+            #exportReportContent { padding: 10px; }
+            .rpt-zones { flex-direction: column; gap: 10px; }
+            .rpt-summary-grid { flex-direction: column; gap: 8px; }
+            .rpt-table { font-size: 0.68rem; }
+
+            /* New batch button: full width and prominent */
+            .card .btn { width: 100%; }
+            #newBatchBtn, [onclick*="openNewBatch"] { width: 100%; padding: 14px; font-size: 0.9rem; }
+
+            /* Flow label */
+            .flow-label { font-size: 0.62rem; }
+
+            /* Footer totals */
+            .v-col-footer { font-size: 0.68rem; padding: 4px 2px; }
+
+            /* Prevent iOS zoom on input focus */
+            input, select, textarea { font-size: 16px !important; }
+
+            /* Touch-friendly: disable drag preview flicker */
+            .batch-card { -webkit-touch-callout: none; }
+        }
+        /* ===== EXPORT REPORT MODAL ===== */
+        .export-overlay {
+            display: none; position: fixed; inset: 0; z-index: 9999;
+            background: rgba(0,0,0,0.6); justify-content: center; align-items: flex-start;
+            overflow-y: auto; padding: 20px;
+        }
+        .export-overlay.active { display: flex; }
+        .export-wrap {
+            background: #fff; border-radius: 12px; max-width: 1200px; width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3); position: relative;
+        }
+        .export-toolbar {
+            display: flex; gap: 10px; align-items: center; padding: 14px 20px;
+            background: linear-gradient(135deg,#1e3a5f,#2d5a87); border-radius: 12px 12px 0 0; color: #fff;
+        }
+        .export-toolbar h2 { font-size: 1.1rem; flex: 1; }
+        .export-toolbar .btn { font-size: 0.8rem; }
+        .export-close { background: rgba(255,255,255,0.15); border: none; color: #fff; width: 32px; height: 32px; border-radius: 8px; cursor: pointer; font-size: 1.1rem; }
+        .export-close:hover { background: rgba(255,255,255,0.3); }
+
+        #exportReportContent {
+            padding: 24px; font-family: 'Segoe UI', Tahoma, sans-serif;
+        }
+        .rpt-header {
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 3px solid #1e3a5f; padding-bottom: 12px; margin-bottom: 16px;
+        }
+        .rpt-header h1 { font-size: 1.3rem; color: #1e3a5f; }
+        .rpt-header-right { text-align: right; font-size: 0.85rem; color: #4a5568; }
+        .rpt-header-right .rpt-date { font-weight: 700; font-size: 1rem; color: #1e3a5f; }
+        .rpt-batch-pills { display: flex; gap: 6px; justify-content: flex-end; margin-top: 4px; }
+        .rpt-batch-pill { padding: 2px 10px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; color: #fff; }
+
+        .rpt-zones { display: flex; gap: 16px; margin-bottom: 16px; }
+        .rpt-zone { flex: 1; }
+        .rpt-zone-title {
+            font-weight: 800; font-size: 0.9rem; padding: 8px 14px; border-radius: 8px 8px 0 0;
+            text-align: center; letter-spacing: 0.5px;
+        }
+        .rpt-zone-a .rpt-zone-title { background: #fed7d7; color: #c53030; }
+        .rpt-zone-b .rpt-zone-title { background: #fefcbf; color: #975a16; }
+
+        .rpt-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+        .rpt-table th {
+            background: #2d3748; color: #fff; padding: 6px 8px; text-align: left;
+            font-weight: 700; font-size: 0.75rem; white-space: nowrap;
+        }
+        .rpt-table td {
+            padding: 5px 8px; border-bottom: 1px solid #e2e8f0; vertical-align: middle;
+        }
+        .rpt-table tr:hover td { background: #f7fafc; }
+        .rpt-loc { font-weight: 700; white-space: nowrap; }
+        .rpt-w { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+        .rpt-batch-cell { font-size: 0.75rem; }
+        .rpt-batch-tag {
+            display: inline-block; padding: 2px 6px; border-radius: 4px; margin: 1px 2px;
+            font-size: 0.72rem; font-weight: 600; white-space: nowrap;
+        }
+        .rpt-src-buying { background: #fff5eb; color: #c05621; border: 1px solid #fbd38d; }
+        .rpt-src-branch { background: #faf5ff; color: #6b46c1; border: 1px solid #d6bcfa; }
+        .rpt-src-sub { background: #f0fff4; color: #276749; border: 1px solid #9ae6b4; }
+
+        .rpt-total-row td { background: #edf2f7; font-weight: 800; border-top: 2px solid #a0aec0; }
+        .rpt-zone-a .rpt-total-row td { background: #fed7d7; }
+        .rpt-zone-b .rpt-total-row td { background: #fefcbf; }
+
+        .rpt-hopper-row td { background: #f0fff4; }
+        .rpt-hopper-b td { background: #ebf8ff; }
+        .rpt-hopper-c td { background: #faf5ff; }
+        .rpt-hidden-row td { opacity: 0.4; text-decoration: line-through; }
+
+        .rpt-summary-section { margin-top: 16px; }
+        .rpt-summary-grid { display: flex; gap: 16px; }
+        .rpt-src-box {
+            flex: 1; padding: 12px 16px; border-radius: 8px; text-align: center;
+        }
+        .rpt-src-box.buying { background: #fff5eb; border: 2px solid #ed8936; }
+        .rpt-src-box.branch { background: #faf5ff; border: 2px solid #9f7aea; }
+        .rpt-src-box.sub { background: #f0fff4; border: 2px solid #48bb78; }
+        .rpt-src-label { font-size: 0.8rem; font-weight: 700; margin-bottom: 4px; }
+        .rpt-src-val { font-size: 1.3rem; font-weight: 800; color: #1a202c; }
+        .rpt-src-count { font-size: 0.7rem; color: #718096; }
+
+        .rpt-grand {
+            margin-top: 12px; padding: 14px 20px; background: #1e3a5f; color: #fff;
+            border-radius: 8px; display: flex; justify-content: space-between; align-items: center;
+            font-size: 1rem;
+        }
+        .rpt-grand-val { font-size: 1.4rem; font-weight: 900; }
+
+        .rpt-note {
+            margin-top: 12px; padding: 10px 14px; background: #fffbeb; border: 1px solid #f6e05e;
+            border-radius: 6px; font-size: 0.8rem; color: #975a16;
+        }
+        .rpt-note textarea {
+            width: 100%; border: 1px dashed #e2e8f0; border-radius: 4px; padding: 6px 8px;
+            font-size: 0.8rem; resize: vertical; min-height: 36px; font-family: inherit;
+            background: transparent; color: #975a16;
+        }
+
+        .rpt-footer {
+            margin-top: 16px; padding-top: 10px; border-top: 2px solid #e2e8f0;
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 0.7rem; color: #a0aec0;
+        }
+        .rpt-legend { display: flex; gap: 12px; }
+        .rpt-legend-item { display: flex; align-items: center; gap: 4px; }
+        .rpt-legend-dot { width: 10px; height: 10px; border-radius: 3px; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div>
+        <h1>FFB Ramp Simulator</h1>
+        <div class="sub">Top View - ระบบจำลองแรมป์ปาล์ม</div>
+    </div>
+    <div class="header-right">
+        <div style="display:flex;align-items:center;gap:4px;">
+            <button class="hdr-nav-btn" onclick="changeDate(-1)" title="วันก่อน">&#9664;</button>
+            <span class="hdr-pill hdr-date" id="dateDisplay" onclick="openDatePicker()" style="cursor:pointer;" title="คลิกเลือกวัน"></span>
+            <input type="date" id="datePicker" style="position:absolute;opacity:0;pointer-events:none;width:0;height:0;">
+            <button class="hdr-nav-btn" onclick="changeDate(1)" title="วันถัดไป">&#9654;</button>
+        </div>
+        <span class="hdr-pill hdr-batch" id="batchPill" onclick="openBatchConfig()" style="cursor:pointer;" title="คลิกเพื่อแก้ไข">Batch วันนี้</span>
+        <span class="hdr-pill" id="syncBadge" style="font-size:0.7rem;background:rgba(255,255,255,0.15);color:#fff;">&#128190; Local</span>
+        <button class="hdr-pill" onclick="openLockConfig()" style="cursor:pointer;background:rgba(255,255,255,0.2);border:none;color:#fff;font-weight:600;font-size:0.8rem;" title="ตั้งค่า Lock">&#9881; Lock</button>
+    </div>
+</div>
+
+<div class="main">
+    <div class="left-panel">
+        <div class="capture-bar">
+            <div class="section-title" style="margin:0;">Top View - ผังแรมป์ปาล์ม</div>
+            <button class="btn btn-capture" onclick="captureRamp()">&#128247; บันทึกรูป</button>
+            <button class="btn" onclick="openExportReport()" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;">&#128202; Export รายงาน</button>
+            <button class="btn" onclick="exportExcel()" style="background:linear-gradient(135deg,#38a169,#2f855a);color:#fff;">&#128196; Excel</button>
+        </div>
+
+        <div id="captureArea">
+        <div class="ramp-container">
+            <div class="zone-labels">
+                <span class="zlabel zlabel-a">ฝั่ง 1,000 ตัน (Zone A)</span>
+                <span class="zlabel zlabel-b">ฝั่ง Boiler (Zone B)</span>
+            </div>
+
+            <div class="topview">
+                <!-- ===== ZONE A ===== -->
+                <div class="zone zone-a">
+                    <!-- Hopper C (horizontal top) -->
+                    <div class="hopper-top hopper-c-bg" id="drop-hopperC" data-slot="hopperC" style="position:relative;">
+                        <div class="slot-gear-wrap" id="gear-hopperC">
+                            <button class="slot-gear-btn" onclick="toggleGearMenu('hopperC',event)">&#9881;</button>
+                            <div class="slot-gear-menu">
+                                <button class="slot-gear-item" data-slot-key="hopperC" onclick="toggleSlotHidden('hopperC',event);closeAllGearMenus();">
+                                    <span class="gear-eye-icon"></span> <span class="gear-eye-label"></span>
+                                </button>
+                                <button class="slot-gear-item danger" onclick="clearHopper('hopperC',event);closeAllGearMenus();">🧹 ล้าง Hopper</button>
+                            </div>
+                        </div>
+                        <div class="hopper-header">
+                            <span class="hopper-name">Hopper C</span>
+                            <span class="hopper-badge">FIFO</span>
+                        </div>
+                        <div class="hopper-batches" id="blocks-hopperC"></div>
+                        <div class="hopper-total" id="total-hopperC"></div>
+                    </div>
+
+                    <div class="flow-label">&#x2195; ลาก Batch</div>
+
+                    <!-- Vertical columns: Locks + Hopper A (dynamic) -->
+                    <div class="columns-row" id="zoneA-locks"></div>
+                    <div class="zone-total" id="zoneA-total"></div>
+                </div>
+
+                <div class="ramp-divider"></div>
+
+                <!-- ===== ZONE B ===== -->
+                <div class="zone zone-b">
+                    <div style="min-height:60px;"></div>
+
+                    <div class="flow-label">&#x2195; ลาก Batch</div>
+
+                    <!-- Vertical columns: Hopper B + Locks (dynamic) -->
+                    <div class="columns-row" id="zoneB-locks"></div>
+                    <div class="zone-total" id="zoneB-total"></div>
+                </div>
+            </div>
+        </div>
+        <div class="capture-watermark" id="captureWatermark">
+            <span><strong>FFB Ramp Simulator</strong></span>
+            <span id="watermarkTime"></span>
+        </div>
+        </div><!-- end captureArea -->
+
+        <!-- SUMMARY -->
+        <div class="card" style="margin-top:14px;">
+            <h3>สรุป Hopper &amp; Lock</h3>
+            <table class="stbl">
+                <thead><tr><th>ตำแหน่ง</th><th>Batch</th><th>รวม (ตัน)</th><th>จำนวน</th></tr></thead>
+                <tbody id="summaryBody"></tbody>
+                <tbody id="lockSummaryBody"></tbody>
+            </table>
+        </div>
+
+        <div class="card" style="margin-top:14px;">
+            <h3>ยอดรวมทั้งหมด (แยกตามแหล่งที่มา)</h3>
+            <div id="grandSourceSummary"></div>
+        </div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="right-panel">
+        <button class="btn" onclick="openAddBatch()" style="background:#48bb78;color:#fff;font-weight:700;font-size:0.85rem;width:100%;padding:10px;">&#43; New Batch</button>
+        <div class="card">
+            <h3>ประวัติการดำเนินการ</h3>
+            <div class="move-log" id="moveLog">
+                <div style="color:#a0aec0;text-align:center;padding:16px;font-size:0.8rem;">ลาก Batch จาก Lock วางที่ Hopper</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>ลำดับ FIFO (เข้าก่อน-ออกก่อน)</h3>
+            <div id="fifoPanel"></div>
+        </div>
+
+        <div class="card">
+            <h3>จัดการ</h3>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+                <button class="btn btn-primary" onclick="loadSampleData()" style="font-size:0.78rem;">โหลดข้อมูลตัวอย่าง</button>
+                <button class="btn btn-danger" onclick="clearAllData()" style="width:100%;font-size:0.78rem;">ล้างข้อมูลทั้งหมด</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal-bg" id="modalBg">
+    <div class="modal"><h3 id="modalTitle"></h3><div id="modalContent"></div>
+        <div style="margin-top:14px;text-align:right;"><button class="btn" style="background:#edf2f7;color:#4a5568;" onclick="closeModal()">ปิด</button></div>
+    </div>
+</div>
+<!-- EDIT BATCH MODAL -->
+<div class="edit-modal" id="editModal">
+    <div class="edit-box" onkeydown="if(event.key==='Enter'){event.preventDefault();saveBatch();}" style="position:relative;">
+        <button type="button" id="editHiddenBtn" class="eye-toggle" onclick="toggleEditHidden()" title="ซ่อน/แสดง — ไม่นับน้ำหนัก"></button>
+        <input type="hidden" id="editHidden" value="0">
+        <h3 id="editTitle">แก้ไข Batch</h3>
+        <div class="edit-fg">
+            <label>รหัส Batch</label>
+            <input type="text" id="editCode">
+        </div>
+        <div style="display:flex;gap:8px;">
+            <div class="edit-fg" style="flex:1;">
+                <label>น้ำหนัก (ตัน)</label>
+                <input type="number" id="editWeight" step="0.01">
+            </div>
+            <div class="edit-fg" style="flex:1;">
+                <label>แหล่งที่มา</label>
+                <select id="editSource">
+                    <option value="buying">จุดรับซื้อ</option>
+                    <option value="branch">สาขา</option>
+                    <option value="sub">รายย่อย</option>
+                </select>
+            </div>
+        </div>
+        <div class="edit-fg">
+            <label>ตำแหน่ง</label>
+            <select id="editLocation"></select>
+        </div>
+        <div class="edit-info" id="editInfo"></div>
+        <div class="edit-actions">
+            <button class="btn btn-delete" onclick="deleteBatch()">ลบ Batch</button>
+            <button class="btn btn-close" onclick="closeEdit()">ยกเลิก</button>
+            <button class="btn btn-save" onclick="saveBatch()">บันทึก</button>
+        </div>
+    </div>
+</div>
+
+<!-- ADD BATCH MODAL -->
+<div class="edit-modal" id="addBatchModal">
+    <div class="edit-box" style="max-width:420px;" onkeydown="if(event.key==='Enter'){event.preventDefault();addBatch(event);}">
+        <h3>&#43; เพิ่ม Batch</h3>
+        <form id="addForm" onsubmit="addBatch(event)">
+            <div style="display:flex;gap:8px;">
+                <div class="edit-fg" style="flex:1;">
+                    <label>แหล่งที่มา</label>
+                    <select id="fSource" required onchange="onSourceChange()">
+                        <option value="">เลือก...</option>
+                        <option value="buying">จุดรับซื้อ</option>
+                        <option value="branch">สาขา</option>
+                        <option value="sub">รายย่อย</option>
+                    </select>
+                </div>
+                <div class="edit-fg" style="flex:2;">
+                    <label>รหัส Batch</label>
+                    <input type="text" id="fCode" placeholder="เลือกแหล่งที่มาก่อน" required>
+                </div>
+            </div>
+            <div style="display:flex;gap:8px;">
+                <div class="edit-fg" style="flex:1;">
+                    <label>น้ำหนัก (ตัน)</label>
+                    <input type="number" id="fWeight" step="0.01" placeholder="0.00" required>
+                </div>
+                <div class="edit-fg" style="flex:1;">
+                    <label>ตำแหน่ง</label>
+                    <select id="fLocation" required>
+                        <option value="">เลือก...</option>
+                    </select>
+                </div>
+            </div>
+            <div class="edit-actions">
+                <button type="button" class="btn btn-close" onclick="closeAddBatch()">ยกเลิก</button>
+                <button type="submit" class="btn btn-save">เพิ่ม Batch</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- BATCH CONFIG MODAL -->
+<div class="edit-modal" id="batchConfigModal">
+    <div class="edit-box">
+        <h3>ตั้งค่า Batch วันนี้</h3>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;">
+            <div class="ldot" style="background:#ed8936;width:14px;height:14px;flex-shrink:0;"></div>
+            <label style="font-weight:700;font-size:0.82rem;flex-shrink:0;width:70px;">จุดรับซื้อ</label>
+            <input type="text" id="cfgBuying" placeholder="B.356" style="flex:1;padding:7px 10px;border:1.5px solid #e2e8f0;border-radius:7px;font-size:0.85rem;">
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;">
+            <div class="ldot" style="background:#9f7aea;width:14px;height:14px;flex-shrink:0;"></div>
+            <label style="font-weight:700;font-size:0.82rem;flex-shrink:0;width:70px;">สาขา</label>
+            <input type="text" id="cfgBranch" placeholder="B.357" style="flex:1;padding:7px 10px;border:1.5px solid #e2e8f0;border-radius:7px;font-size:0.85rem;">
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;">
+            <div class="ldot" style="background:#48bb78;width:14px;height:14px;flex-shrink:0;"></div>
+            <label style="font-weight:700;font-size:0.82rem;flex-shrink:0;width:70px;">รายย่อย</label>
+            <input type="text" id="cfgSub" placeholder="B.358" style="flex:1;padding:7px 10px;border:1.5px solid #e2e8f0;border-radius:7px;font-size:0.85rem;">
+        </div>
+        <div class="edit-actions">
+            <button class="btn btn-close" onclick="closeBatchConfig()">ยกเลิก</button>
+            <button class="btn btn-save" onclick="saveBatchConfig()">บันทึก</button>
+        </div>
+    </div>
+</div>
+
+<!-- IMAGE PREVIEW -->
+<div class="preview-overlay" id="previewOverlay">
+    <img id="previewImg" src="">
+    <div class="preview-actions">
+        <button class="btn btn-capture" onclick="downloadImage()" style="padding:12px 24px;">&#128229; ดาวน์โหลด</button>
+        <button class="btn btn-share" onclick="shareImage()" style="padding:12px 24px;">&#128228; แชร์</button>
+        <button class="btn btn-close" onclick="closePreview()" style="padding:12px 24px;background:#edf2f7;color:#4a5568;">ปิด</button>
+    </div>
+</div>
+
+<!-- SPLIT BATCH MODAL -->
+<div class="edit-modal" id="splitModal">
+    <div class="edit-box" style="max-width:380px;" onkeydown="if(event.key==='Enter'){event.preventDefault();confirmSplit();}">
+        <h3 id="splitTitle">แบ่ง Batch</h3>
+        <div id="splitInfo" style="background:#f7fafc;border-radius:8px;padding:10px 12px;margin-bottom:12px;"></div>
+        <div style="display:flex;gap:8px;margin-bottom:14px;">
+            <button class="btn split-opt active" id="splitOptAll" onclick="setSplitMode('all')" style="flex:1;">ย้ายทั้งหมด</button>
+            <button class="btn split-opt" id="splitOptPart" onclick="setSplitMode('part')" style="flex:1;">แบ่งน้ำหนัก</button>
+        </div>
+        <div id="splitPartArea" style="display:none;">
+            <div class="edit-fg">
+                <label>น้ำหนักที่ย้าย (ตัน)</label>
+                <input type="number" id="splitWeight" step="0.01" min="0.01" style="font-size:1rem;font-weight:700;">
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:0.75rem;color:#718096;margin-top:-8px;margin-bottom:8px;">
+                <span>คงเหลือใน Lock: <strong id="splitRemain">0</strong> ตัน</span>
+                <a href="#" onclick="event.preventDefault();document.getElementById('splitWeight').value=splitBatchRef.weight;onSplitWeightChange();" style="color:#4299e1;">ใส่ทั้งหมด</a>
+            </div>
+            <input type="range" id="splitSlider" min="0.01" step="0.01" style="width:100%;margin-bottom:6px;" oninput="document.getElementById('splitWeight').value=this.value;onSplitWeightChange();">
+        </div>
+        <div class="edit-actions">
+            <button class="btn btn-close" onclick="closeSplit()">ยกเลิก</button>
+            <button class="btn btn-save" id="splitBtn" onclick="confirmSplit()">ย้าย</button>
+        </div>
+    </div>
+</div>
+
+<!-- LOCK MOVE PICKER MODAL -->
+<div class="edit-modal" id="lockMoveModal">
+    <div class="edit-box" style="max-width:400px;">
+        <h3 id="lockMoveTitle">ย้าย Batch</h3>
+        <div style="margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;">
+            <label style="font-size:0.8rem;font-weight:600;color:#4a5568;cursor:pointer;">
+                <input type="checkbox" id="lockMoveSelectAll" onchange="toggleLockMoveAll()" checked style="margin-right:4px;">เลือกทั้งหมด
+            </label>
+            <span id="lockMoveCount" style="font-size:0.72rem;color:#a0aec0;"></span>
+        </div>
+        <div id="lockMoveList" style="max-height:300px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;"></div>
+        <div id="lockMoveTotal" style="text-align:right;font-weight:700;font-size:0.82rem;color:#2d3748;margin-top:8px;padding-top:8px;border-top:1px solid #e2e8f0;"></div>
+        <div class="edit-actions">
+            <button class="btn btn-close" onclick="closeLockMove()">ยกเลิก</button>
+            <button class="btn btn-save" id="lockMoveBtn" onclick="confirmLockMove()">ย้าย</button>
+        </div>
+    </div>
+</div>
+
+<!-- LOCK CONFIG MODAL -->
+<div class="edit-modal" id="lockConfigModal">
+    <div class="edit-box" style="max-width:520px;">
+        <h3>&#9881; ตั้งค่า Lock</h3>
+        <div style="display:flex;gap:16px;">
+            <div style="flex:1;">
+                <div style="font-weight:700;font-size:0.82rem;margin-bottom:8px;color:#c53030;">Zone A (ฝั่ง 1,000 ตัน)</div>
+                <div id="lockCfgZoneA"></div>
+                <button class="btn" onclick="addLockRow('A')" style="width:100%;margin-top:6px;background:#fed7d7;color:#c53030;font-size:0.75rem;padding:5px;">+ เพิ่ม Lock Zone A</button>
+            </div>
+            <div style="flex:1;">
+                <div style="font-weight:700;font-size:0.82rem;margin-bottom:8px;color:#975a16;">Zone B (ฝั่ง Boiler)</div>
+                <div id="lockCfgZoneB"></div>
+                <button class="btn" onclick="addLockRow('B')" style="width:100%;margin-top:6px;background:#fefcbf;color:#975a16;font-size:0.75rem;padding:5px;">+ เพิ่ม Lock Zone B</button>
+            </div>
+        </div>
+        <div style="margin-top:12px;padding:8px;background:#f7fafc;border-radius:6px;font-size:0.7rem;color:#718096;">
+            &#9432; เปลี่ยนชื่อ Lock ได้ตามต้องการ เพิ่ม/ลบ Lock ได้ (ลบ Lock ที่มี Batch จะย้ายไป Lock แรก)
+        </div>
+        <div class="edit-actions">
+            <button class="btn btn-close" onclick="closeLockConfig()">ยกเลิก</button>
+            <button class="btn btn-save" onclick="saveLockConfig()">บันทึก</button>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Export Report Modal -->
+<div class="export-overlay" id="exportOverlay">
+    <div class="export-wrap">
+        <div class="export-toolbar">
+            <h2>&#128202; Export รายงาน</h2>
+            <button class="btn" onclick="captureReport()" style="background:#ed8936;color:#fff;">&#128247; บันทึกรูป</button>
+            <button class="btn" onclick="printReport()" style="background:rgba(255,255,255,0.2);color:#fff;">&#128424; พิมพ์</button>
+            <button class="export-close" onclick="closeExportReport()">&times;</button>
+        </div>
+        <div id="exportReportContent"></div>
+    </div>
+</div>
+
+<script>
+// ========= LOCK CONFIG =========
+let lockConfig = {
+    zoneA: [
+        { key:'L1', name:'L1' }, { key:'L2', name:'L2' },
+        { key:'L3', name:'L3' }, { key:'L4', name:'L4' }
+    ],
+    zoneB: [
+        { key:'L7', name:'L7' }, { key:'L6', name:'L6' }, { key:'L5', name:'L5' }
+    ]
+};
+
+let slots = {};
+let moveHistory = [];
+let NAMES = {};
+let hiddenSlots = new Set();
+const SRC = { buying:'จุดรับซื้อ', branch:'สาขา', sub:'รายย่อย' };
+let currentDate = new Date().toISOString().slice(0,10); // YYYY-MM-DD
+
+function getAllLockKeys() {
+    return [...lockConfig.zoneA, ...lockConfig.zoneB].map(l => l.key);
+}
+
+function rebuildSlotsAndNames() {
+    NAMES = { hopperA:'Hopper A', hopperB:'Hopper B', hopperC:'Hopper C' };
+    const allKeys = getAllLockKeys();
+    allKeys.forEach(k => {
+        const cfg = [...lockConfig.zoneA, ...lockConfig.zoneB].find(l => l.key === k);
+        NAMES[k] = cfg ? cfg.name : k;
+        if (!slots[k]) slots[k] = [];
+    });
+    if (!slots.hopperA) slots.hopperA = [];
+    if (!slots.hopperB) slots.hopperB = [];
+    if (!slots.hopperC) slots.hopperC = [];
+    // Remove old lock keys no longer in config
+    Object.keys(slots).forEach(k => {
+        if (k.startsWith('hopper')) return;
+        if (!allKeys.includes(k)) {
+            // Move orphan batches to first lock of their zone or just discard slot if empty
+            if (slots[k].length && allKeys.length) {
+                slots[allKeys[0]].push(...slots[k]);
+            }
+            delete slots[k];
+        }
+    });
+}
+
+function loadLockConfig() {
+    try {
+        const d = JSON.parse(localStorage.getItem('ffb3_lockcfg'));
+        if (d && d.zoneA && d.zoneB) lockConfig = d;
+    } catch(e){}
+}
+
+function saveLockConfigStorage() {
+    localStorage.setItem('ffb3_lockcfg', JSON.stringify(lockConfig));
+}
+
+async function init() {
+    loadLockConfig();
+    loadHiddenSlots();
+    rebuildSlotsAndNames();
+    loadStorage();      // fast: localStorage first
+    loadBatchConfig();
+    buildLayout();
+    renderAll();
+    setupDrop();
+    setupHeaderDelete();
+    updateDateDisplay();
+    document.addEventListener('click', () => closeAllGearMenus());
+    document.getElementById('datePicker').addEventListener('change', function() {
+        if (this.value) switchDate(this.value);
+        this.style.pointerEvents = 'none';
+    });
+    // Then try to load from file (async, will override if file exists)
+    const fromFile = await loadStorageAsync();
+    if (fromFile) { renderAll(); updateDateDisplay(); }
+    updateSyncBadge();
+}
+
+function loadHiddenSlots() {
+    try { const d = JSON.parse(localStorage.getItem('ffb3_hidden')); if (Array.isArray(d)) hiddenSlots = new Set(d); } catch(e){}
+}
+function saveHiddenSlots() { localStorage.setItem('ffb3_hidden', JSON.stringify([...hiddenSlots])); }
+
+function toggleSlotHidden(key, e) {
+    if (e) e.stopPropagation();
+    if (hiddenSlots.has(key)) hiddenSlots.delete(key); else hiddenSlots.add(key);
+    saveHiddenSlots();
+    updateSlotHiddenUI();
+    renderAll();
+}
+
+function isSlotHidden(key) { return hiddenSlots.has(key); }
+
+function updateSlotHiddenUI() {
+    document.querySelectorAll('[data-slot]').forEach(el => {
+        const key = el.dataset.slot;
+        el.classList.toggle('slot-hidden', hiddenSlots.has(key));
+    });
+    // update gear menu eye icon/label
+    document.querySelectorAll('.slot-gear-item[data-slot-key]').forEach(btn => {
+        const key = btn.dataset.slotKey;
+        const hidden = hiddenSlots.has(key);
+        const iconEl = btn.querySelector('.gear-eye-icon');
+        const labelEl = btn.querySelector('.gear-eye-label');
+        if (iconEl) iconEl.innerHTML = hidden ? SVG_EYE_CLOSED_SM : SVG_EYE_OPEN_SM;
+        if (labelEl) labelEl.textContent = hidden ? 'แสดง (นับน้ำหนัก)' : 'ซ่อน (ไม่นับน้ำหนัก)';
+    });
+}
+
+function toggleGearMenu(key, e) {
+    if (e) { e.stopPropagation(); e.preventDefault(); }
+    const wrap = document.getElementById('gear-' + key);
+    if (!wrap) return;
+    const wasOpen = wrap.classList.contains('open');
+    closeAllGearMenus();
+    if (!wasOpen) wrap.classList.add('open');
+}
+
+function closeAllGearMenus() {
+    document.querySelectorAll('.slot-gear-wrap.open').forEach(w => w.classList.remove('open'));
+}
+
+// ========= DYNAMIC LAYOUT =========
+function buildLayout() {
+    buildZone('zoneA-locks', lockConfig.zoneA, 'hopperA', 'Hopper A', 'hopper-a-style', 'HOPPER A');
+    buildZone('zoneB-locks', lockConfig.zoneB, 'hopperB', 'Hopper B', 'hopper-b-style', 'HOPPER B');
+    updateLocationDropdowns();
+}
+
+function buildZone(containerId, locks, hopperKey, hopperName, hopperClass, hopperLabel) {
+    const container = document.getElementById(containerId);
+    let html = '';
+
+    // For Zone A: locks first, then hopper at end
+    // For Zone B: hopper first, then locks
+    if (hopperKey === 'hopperB') {
+        html += hopperColHTML(hopperKey, hopperName, hopperClass, hopperLabel);
+    }
+
+    locks.forEach(l => {
+        html += `<div class="v-col lock-style empty${hiddenSlots.has(l.key)?' slot-hidden':''}" id="drop-${l.key}" data-slot="${l.key}">
+            <div class="slot-gear-wrap" id="gear-${l.key}">
+                <button class="slot-gear-btn" onclick="toggleGearMenu('${l.key}',event)">&#9881;</button>
+                <div class="slot-gear-menu">
+                    <button class="slot-gear-item" data-slot-key="${l.key}" onclick="toggleSlotHidden('${l.key}',event);closeAllGearMenus();">
+                        <span class="gear-eye-icon"></span> <span class="gear-eye-label"></span>
+                    </button>
+                </div>
+            </div>
+            <div class="v-col-header" draggable="true" ondragstart="onLockDS(event,'${l.key}')" ondragend="onLockDE(event,'${l.key}')">
+                <div class="col-name">${l.name}</div>
+                <div class="col-badge" id="badge-${l.key}">ว่าง</div>
+            </div>
+            <div class="v-col-body" id="blocks-${l.key}"></div>
+            <div class="v-col-footer" id="total-${l.key}"></div>
+        </div>`;
+    });
+
+    if (hopperKey === 'hopperA') {
+        html += hopperColHTML(hopperKey, hopperName, hopperClass, hopperLabel);
+    }
+
+    container.innerHTML = html;
+}
+
+function hopperColHTML(key, name, cls, label) {
+    return `<div class="v-col ${cls}${hiddenSlots.has(key)?' slot-hidden':''}" id="drop-${key}" data-slot="${key}">
+        <div class="slot-gear-wrap" id="gear-${key}">
+            <button class="slot-gear-btn" onclick="toggleGearMenu('${key}',event)">&#9881;</button>
+            <div class="slot-gear-menu">
+                <button class="slot-gear-item" data-slot-key="${key}" onclick="toggleSlotHidden('${key}',event);closeAllGearMenus();">
+                    <span class="gear-eye-icon"></span> <span class="gear-eye-label"></span>
+                </button>
+                <button class="slot-gear-item danger" onclick="clearHopper('${key}',event);closeAllGearMenus();">🧹 ล้าง Hopper</button>
+            </div>
+        </div>
+        <div class="v-col-header">
+            <div class="col-name">${name}</div>
+            <div class="col-badge hopper-badge-sm">FIFO</div>
+        </div>
+        <div class="v-col-body" id="blocks-${key}"></div>
+        <div class="v-col-footer" id="total-${key}"></div>
+        <div class="hopper-vlabel">${label}</div>
+    </div>`;
+}
+
+function updateLocationDropdowns() {
+    const zoneAOpts = lockConfig.zoneA.map(l => `<option value="${l.key}">${l.name}</option>`).join('');
+    const zoneBOpts = lockConfig.zoneB.map(l => `<option value="${l.key}">${l.name}</option>`).join('');
+    const lockOpts = `<optgroup label="Hopper">
+        <option value="hopperA">Hopper A</option>
+        <option value="hopperB">Hopper B</option>
+        <option value="hopperC">Hopper C</option>
+    </optgroup>
+    <optgroup label="Zone A Locks">${zoneAOpts}</optgroup>
+    <optgroup label="Zone B Locks">${zoneBOpts}</optgroup>`;
+
+    const fLoc = document.getElementById('fLocation');
+    const eLoc = document.getElementById('editLocation');
+    const selected1 = fLoc.value;
+    const selected2 = eLoc.value;
+    fLoc.innerHTML = '<option value="">เลือก...</option>' + lockOpts;
+    eLoc.innerHTML = lockOpts;
+    if (selected1) fLoc.value = selected1;
+    if (selected2) eLoc.value = selected2;
+}
+
+// ========= LOCK CONFIG MODAL =========
+let lockCfgTemp = { zoneA: [], zoneB: [] };
+let lockNextId = 100;
+
+function openLockConfig() {
+    lockCfgTemp = {
+        zoneA: lockConfig.zoneA.map(l => ({...l})),
+        zoneB: lockConfig.zoneB.map(l => ({...l}))
+    };
+    renderLockCfgRows();
+    document.getElementById('lockConfigModal').classList.add('active');
+}
+
+function closeLockConfig() { document.getElementById('lockConfigModal').classList.remove('active'); }
+
+function renderLockCfgRows() {
+    ['A','B'].forEach(zone => {
+        const arr = zone === 'A' ? lockCfgTemp.zoneA : lockCfgTemp.zoneB;
+        const container = document.getElementById(`lockCfgZone${zone}`);
+        container.innerHTML = arr.map((l, i) => `<div class="lcfg-row">
+            <span class="lcfg-key">#${i+1}</span>
+            <input type="text" value="${l.name}" data-zone="${zone}" data-idx="${i}" onchange="onLockNameChange(this)" placeholder="ชื่อ Lock">
+            <button class="lcfg-del" onclick="removeLockRow('${zone}',${i})" title="ลบ Lock">✕</button>
+        </div>`).join('') || '<div style="color:#cbd5e0;font-size:0.75rem;text-align:center;padding:8px;">ไม่มี Lock</div>';
+    });
+}
+
+function onLockNameChange(el) {
+    const zone = el.dataset.zone;
+    const idx = parseInt(el.dataset.idx);
+    const arr = zone === 'A' ? lockCfgTemp.zoneA : lockCfgTemp.zoneB;
+    arr[idx].name = el.value.trim() || arr[idx].key;
+}
+
+function addLockRow(zone) {
+    const arr = zone === 'A' ? lockCfgTemp.zoneA : lockCfgTemp.zoneB;
+    const allKeys = [...lockCfgTemp.zoneA, ...lockCfgTemp.zoneB].map(l => l.key);
+    let newKey = 'L' + (lockNextId++);
+    // Find next available simple key
+    for (let n = 1; n < 100; n++) {
+        if (!allKeys.includes('L'+n)) { newKey = 'L'+n; break; }
+    }
+    arr.push({ key: newKey, name: newKey });
+    renderLockCfgRows();
+}
+
+function removeLockRow(zone, idx) {
+    const arr = zone === 'A' ? lockCfgTemp.zoneA : lockCfgTemp.zoneB;
+    arr.splice(idx, 1);
+    renderLockCfgRows();
+}
+
+function saveLockConfig() {
+    // Read latest names from inputs
+    document.querySelectorAll('#lockCfgZoneA input, #lockCfgZoneB input').forEach(el => {
+        const zone = el.dataset.zone;
+        const idx = parseInt(el.dataset.idx);
+        const arr = zone === 'A' ? lockCfgTemp.zoneA : lockCfgTemp.zoneB;
+        if (arr[idx]) arr[idx].name = el.value.trim() || arr[idx].key;
+    });
+
+    // Check for duplicate keys
+    const allKeys = [...lockCfgTemp.zoneA, ...lockCfgTemp.zoneB].map(l => l.key);
+    const uniqueKeys = new Set(allKeys);
+    if (uniqueKeys.size !== allKeys.length) {
+        alert('มี Lock key ซ้ำ กรุณาตรวจสอบ');
+        return;
+    }
+
+    lockConfig = {
+        zoneA: lockCfgTemp.zoneA.map(l => ({...l})),
+        zoneB: lockCfgTemp.zoneB.map(l => ({...l}))
+    };
+
+    rebuildSlotsAndNames();
+    saveLockConfigStorage();
+    buildLayout();
+    save();
+    renderAll();
+    setupDrop();
+    setupHeaderDelete();
+    closeLockConfig();
+    toast('บันทึกตั้งค่า Lock สำเร็จ');
+}
+
+document.getElementById('lockConfigModal').addEventListener('click', function(e){ if(e.target===this) closeLockConfig(); });
+
+function dateKey(d) { return 'ffb3_' + (d || currentDate); }
+const API = '/api';
+let fileSync = 'idle'; // idle | saving | saved | error
+
+function save() {
+    const data = { slots, moveHistory, batchConfig, lockConfig: lockConfig, date: currentDate };
+    // Save to localStorage
+    localStorage.setItem(dateKey(), JSON.stringify(data));
+    // Save to file via API
+    saveToFile(currentDate, data);
+}
+
+async function saveToFile(date, data) {
+    try {
+        fileSync = 'saving'; updateSyncBadge();
+        const res = await fetch(`${API}/data/${date}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        if (res.ok) { fileSync = 'saved'; } else { fileSync = 'error'; }
+    } catch(e) { fileSync = 'error'; }
+    updateSyncBadge();
+}
+
+async function loadFromFile(date) {
+    try {
+        const res = await fetch(`${API}/data/${date}`);
+        if (res.ok) {
+            const d = await res.json();
+            if (d && d.slots) return d;
+        }
+    } catch(e) {}
+    return null;
+}
+
+function loadStorage() {
+    try {
+        let raw = localStorage.getItem(dateKey());
+        if (!raw && currentDate === new Date().toISOString().slice(0,10) && !localStorage.getItem('ffb3_dates')) {
+            raw = localStorage.getItem('ffb3');
+        }
+        const d = JSON.parse(raw);
+        if (d) {
+            const loaded = d.slots || {};
+            Object.keys(loaded).forEach(k => { slots[k] = loaded[k]; });
+            moveHistory = d.moveHistory || [];
+        }
+    } catch(e){}
+    getAllLockKeys().forEach(k => { if (!slots[k]) slots[k] = []; });
+    if (!slots.hopperA) slots.hopperA = [];
+    if (!slots.hopperB) slots.hopperB = [];
+    if (!slots.hopperC) slots.hopperC = [];
+}
+
+async function loadStorageAsync() {
+    // Try file first, then localStorage
+    const fileData = await loadFromFile(currentDate);
+    if (fileData) {
+        slots = {};
+        rebuildSlotsAndNames();
+        const loaded = fileData.slots || {};
+        Object.keys(loaded).forEach(k => { slots[k] = loaded[k]; });
+        moveHistory = fileData.moveHistory || [];
+        getAllLockKeys().forEach(k => { if (!slots[k]) slots[k] = []; });
+        if (!slots.hopperA) slots.hopperA = [];
+        if (!slots.hopperB) slots.hopperB = [];
+        if (!slots.hopperC) slots.hopperC = [];
+        fileSync = 'saved';
+        return true;
+    }
+    // Fallback to localStorage
+    loadStorage();
+    fileSync = 'idle';
+    return false;
+}
+
+async function getSavedDates() {
+    try {
+        const res = await fetch(`${API}/dates`);
+        if (res.ok) {
+            const d = await res.json();
+            return d.dates || [];
+        }
+    } catch(e) {}
+    // Fallback to localStorage
+    try { return JSON.parse(localStorage.getItem('ffb3_dates')) || []; } catch(e){ return []; }
+}
+
+async function switchDate(newDate) {
+    if (newDate === currentDate) return;
+    // Save current date's data
+    const data = { slots, moveHistory, batchConfig, lockConfig, date: currentDate };
+    localStorage.setItem(dateKey(), JSON.stringify(data));
+    saveToFile(currentDate, data);
+    // Switch
+    currentDate = newDate;
+    slots = {};
+    moveHistory = [];
+    rebuildSlotsAndNames();
+    await loadStorageAsync();
+    renderAll();
+    updateDateDisplay();
+}
+
+function updateSyncBadge() {
+    const el = document.getElementById('syncBadge');
+    if (!el) return;
+    if (fileSync === 'saving') { el.innerHTML = '&#9696; Saving...'; el.style.background = '#f6ad55'; el.style.color = '#fff'; }
+    else if (fileSync === 'saved') { el.innerHTML = '&#9989; File saved'; el.style.background = '#c6f6d5'; el.style.color = '#276749'; }
+    else if (fileSync === 'error') { el.innerHTML = '&#9888; Local only'; el.style.background = '#fed7d7'; el.style.color = '#c53030'; }
+    else { el.innerHTML = '&#128190; Local'; el.style.background = 'rgba(255,255,255,0.15)'; el.style.color = '#fff'; }
+}
+
+function changeDate(delta) {
+    const d = new Date(currentDate);
+    d.setDate(d.getDate() + delta);
+    switchDate(d.toISOString().slice(0,10));
+}
+
+function openDatePicker() {
+    const picker = document.getElementById('datePicker');
+    picker.value = currentDate;
+    picker.style.pointerEvents = 'auto';
+    picker.showPicker ? picker.showPicker() : picker.click();
+}
+
+function updateDateDisplay() {
+    const d = new Date(currentDate + 'T00:00:00');
+    const today = new Date().toISOString().slice(0,10);
+    const isToday = currentDate === today;
+    const thDate = d.toLocaleDateString('th-TH', {weekday:'short', year:'numeric', month:'short', day:'numeric'});
+    const hasData = Object.keys(slots).some(k => (slots[k]||[]).length > 0);
+
+    let html = thDate;
+    if (isToday) html += ' <span class="hdr-date-today">วันนี้</span>';
+    if (!isToday && !hasData) html += '<span class="hdr-date-indicator">ยังไม่มีข้อมูล</span>';
+    document.getElementById('dateDisplay').innerHTML = html;
+}
+
+function openAddBatch() {
+    document.getElementById('addForm').reset();
+    document.getElementById('addBatchModal').classList.add('active');
+    setTimeout(() => document.getElementById('fSource').focus(), 100);
+}
+function closeAddBatch() { document.getElementById('addBatchModal').classList.remove('active'); }
+
+function addBatch(e) {
+    e.preventDefault();
+    const code=document.getElementById('fCode').value.trim();
+    const weight=parseFloat(document.getElementById('fWeight').value);
+    const loc=document.getElementById('fLocation').value;
+    const src=document.getElementById('fSource').value;
+    if(!code||!weight||!loc||!src) return;
+    slots[loc].push({ id:Date.now().toString(), code, weight, source:src, fromLock:null, timestamp:new Date().toISOString() });
+    logAction('add', code, loc, null, weight);
+    save(); renderAll();
+    toast(`เพิ่ม ${code} ที่ ${NAMES[loc]}`);
+    document.getElementById('addForm').reset();
+    closeAddBatch();
+}
+
+document.getElementById('addBatchModal').addEventListener('click', function(e){ if(e.target===this) closeAddBatch(); });
+
+// ========= DRAG & DROP (between slots + reorder within) =========
+let dragData = null;
+
+function setupDrop() {
+    document.querySelectorAll('[data-slot]').forEach(el => {
+        el.addEventListener('dragover', e => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            el.classList.add('drag-over');
+
+            // show drop indicator between cards
+            clearDropIndicators(el);
+            const body = el.querySelector('.v-col-body, .hopper-batches');
+            if (!body) return;
+            const cards = [...body.querySelectorAll('.batch-card')];
+            if (!cards.length) return;
+
+            const dropIdx = getDropIndex(body, cards, e.clientY);
+            const indicator = body.querySelector('.drop-indicator') || document.createElement('div');
+            indicator.className = 'drop-indicator';
+            if (dropIdx >= cards.length) {
+                body.appendChild(indicator);
+            } else {
+                body.insertBefore(indicator, cards[dropIdx]);
+            }
+        });
+
+        el.addEventListener('dragleave', e => {
+            if (!el.contains(e.relatedTarget)) {
+                el.classList.remove('drag-over');
+                clearDropIndicators(el);
+            }
+        });
+
+        el.addEventListener('drop', e => {
+            e.preventDefault();
+            el.classList.remove('drag-over');
+            clearDropIndicators(el);
+            if (!dragData) return;
+
+            const target = el.dataset.slot;
+
+            // === LOCK-LEVEL DROP: show picker to move all or some ===
+            if (dragData.type === 'lock') {
+                const lockKey = dragData.from;
+                const col = document.getElementById('drop-' + lockKey);
+                if (col) col.classList.remove('lock-dragging');
+
+                if (!target.startsWith('hopper') || target === lockKey) { dragData = null; return; }
+
+                const batches = slots[lockKey];
+                if (!batches.length) { dragData = null; return; }
+
+                openLockMovePicker(lockKey, target);
+                dragData = null;
+                return;
+            }
+
+            // === SINGLE BATCH DROP ===
+            const srcArr = slots[dragData.from];
+            const srcIdx = srcArr.findIndex(b => b.id === dragData.id);
+            if (srcIdx === -1) { dragData = null; return; }
+
+            const body = el.querySelector('.v-col-body, .hopper-batches');
+            const cards = body ? [...body.querySelectorAll('.batch-card')] : [];
+            let dropIdx = cards.length;
+            if (body && cards.length) {
+                dropIdx = getDropIndex(body, cards, e.clientY);
+            }
+
+            if (target === dragData.from) {
+                const batch = srcArr.splice(srcIdx, 1)[0];
+                const insertAt = dropIdx > srcIdx ? dropIdx - 1 : dropIdx;
+                srcArr.splice(insertAt, 0, batch);
+                save(); renderAll();
+                toast(`เรียงลำดับ ${batch.code} ใน ${NAMES[target]}`);
+            } else {
+                const fromIsLock = dragData.from.startsWith('L');
+                const toIsHopper = target.startsWith('hopper');
+
+                // Lock → Hopper: offer split option
+                if (fromIsLock && toIsHopper) {
+                    const batchRef = srcArr[srcIdx];
+                    openSplitPicker(dragData.from, target, batchRef.id, dropIdx);
+                    dragData = null;
+                    return;
+                }
+
+                const batch = srcArr.splice(srcIdx, 1)[0];
+                if (!fromIsLock && !toIsHopper) batch.fromLock = null;
+
+                slots[target].splice(dropIdx, 0, batch);
+                save(); renderAll();
+                toast(`ย้าย ${batch.code}: ${NAMES[dragData.from]} → ${NAMES[target]}`);
+            }
+            dragData = null;
+        });
+    });
+}
+
+function getDropIndex(body, cards, mouseY) {
+    for (let i = 0; i < cards.length; i++) {
+        const rect = cards[i].getBoundingClientRect();
+        if (mouseY < rect.top + rect.height / 2) return i;
+    }
+    return cards.length;
+}
+
+function clearDropIndicators(el) {
+    el.querySelectorAll('.drop-indicator').forEach(d => d.remove());
+}
+
+function onDS(e, slot, id) {
+    dragData = { from: slot, id, type: 'batch' };
+    e.dataTransfer.effectAllowed = 'move';
+    e.target.classList.add('dragging');
+}
+function onDE(e) { e.target.classList.remove('dragging'); }
+
+// ========= DELETE BY DROP ON HEADER =========
+function setupHeaderDelete() {
+    document.querySelectorAll('[data-slot]').forEach(el => {
+        const header = el.querySelector('.v-col-header, .hopper-header');
+        if (!header) return;
+        const slotKey = el.dataset.slot;
+
+        header.addEventListener('dragover', e => {
+            if (!dragData) return;
+            e.preventDefault();
+            e.stopPropagation();
+
+            if (dragData.type === 'batch') {
+                header.classList.add('delete-hover');
+            } else if (dragData.type === 'lock' && slotKey.startsWith('hopper')) {
+                el.classList.add('drag-over');
+            }
+        });
+
+        header.addEventListener('dragleave', e => {
+            header.classList.remove('delete-hover');
+            if (!header.contains(e.relatedTarget)) {
+                el.classList.remove('drag-over');
+            }
+        });
+
+        header.addEventListener('drop', e => {
+            e.preventDefault();
+            e.stopPropagation();
+            header.classList.remove('delete-hover');
+            el.classList.remove('drag-over');
+            clearDropIndicators(el);
+            if (!dragData) return;
+
+            // LOCK-LEVEL DROP on hopper header → show picker
+            if (dragData.type === 'lock' && slotKey.startsWith('hopper')) {
+                const lockKey = dragData.from;
+                const col = document.getElementById('drop-' + lockKey);
+                if (col) col.classList.remove('lock-dragging');
+
+                const batches = slots[lockKey];
+                if (!batches.length) { dragData = null; return; }
+
+                openLockMovePicker(lockKey, slotKey);
+                dragData = null;
+                return;
+            }
+
+            // SINGLE BATCH DROP on header → delete
+            if (dragData.type === 'batch') {
+                const arr = slots[dragData.from];
+                const batch = arr.find(b => b.id === dragData.id);
+                if (!batch) { dragData = null; return; }
+
+                if (!confirm(`ลบ ${batch.code} (${batch.weight} ตัน) ออกจาก ${NAMES[dragData.from]}?`)) { dragData = null; return; }
+
+                logAction('delete', batch.code, dragData.from, null, batch.weight);
+                slots[dragData.from] = arr.filter(b => b.id !== dragData.id);
+                save(); renderAll();
+                toast(`ลบ ${batch.code} จาก ${NAMES[dragData.from]} สำเร็จ`);
+                dragData = null;
+            }
+        });
+    });
+}
+
+// Lock-level drag: drag entire Lock to a Hopper
+function onLockDS(e, lockKey) {
+    if (!slots[lockKey].length) { e.preventDefault(); return; }
+    dragData = { from: lockKey, type: 'lock' };
+    e.dataTransfer.effectAllowed = 'move';
+    const col = document.getElementById('drop-' + lockKey);
+    if (col) col.classList.add('lock-dragging');
+    e.stopPropagation();
+}
+function onLockDE(e, lockKey) {
+    const col = document.getElementById('drop-' + lockKey);
+    if (col) col.classList.remove('lock-dragging');
+}
+
+// ========= RENDER =========
+function renderAll() {
+    Object.keys(slots).forEach(renderSlot);
+    renderLog(); renderFIFO(); renderSummary(); renderZoneTotals(); renderGrandSourceSummary(); updateStyles(); updateSlotHiddenUI();
+}
+
+function renderZoneTotals() {
+    [{ zone: lockConfig.zoneA, el: 'zoneA-total', label: 'Zone A' },
+     { zone: lockConfig.zoneB, el: 'zoneB-total', label: 'Zone B' }].forEach(z => {
+        let totalW = 0, totalB = 0;
+        let srcTotals = { buying: 0, branch: 0, sub: 0 };
+        z.zone.forEach(l => {
+            if (isSlotHidden(l.key)) return;
+            const arr = slots[l.key] || [];
+            arr.forEach(b => {
+                if (b.hidden) return;
+                totalW += b.weight;
+                totalB++;
+                if (srcTotals[b.source] !== undefined) srcTotals[b.source] += b.weight;
+            });
+        });
+        const el = document.getElementById(z.el);
+        if (el) {
+            const srcHtml = `<span style="display:flex;gap:6px;flex-wrap:wrap;">` +
+                `<span style="background:#ed8936;color:#fff;padding:1px 6px;border-radius:4px;font-size:0.68rem;">จุดรับซื้อ ${srcTotals.buying.toFixed(2)}</span>` +
+                `<span style="background:#9f7aea;color:#fff;padding:1px 6px;border-radius:4px;font-size:0.68rem;">สาขา ${srcTotals.branch.toFixed(2)}</span>` +
+                `<span style="background:#48bb78;color:#fff;padding:1px 6px;border-radius:4px;font-size:0.68rem;">รายย่อย ${srcTotals.sub.toFixed(2)}</span>` +
+                `</span>`;
+            el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;">
+                <span class="zt-label">&#128230; รวม Lock ${z.label}</span>
+                <span class="zt-value">${totalW.toFixed(2)} ตัน (${totalB} Batch)</span>
+            </div>
+            <div style="margin-top:4px;">${srcHtml}</div>`;
+        }
+    });
+}
+
+function renderGrandSourceSummary() {
+    let src = { buying: { w: 0, n: 0 }, branch: { w: 0, n: 0 }, sub: { w: 0, n: 0 } };
+    let grandW = 0, grandN = 0;
+    Object.keys(slots).forEach(k => {
+        if (isSlotHidden(k)) return;
+        (slots[k] || []).forEach(b => {
+            if (b.hidden) return;
+            grandW += b.weight; grandN++;
+            if (src[b.source]) { src[b.source].w += b.weight; src[b.source].n++; }
+        });
+    });
+    const el = document.getElementById('grandSourceSummary');
+    if (!el) return;
+    const items = [
+        { key: 'buying', label: 'จุดรับซื้อ', color: '#ed8936', bg: '#fffaf0' },
+        { key: 'branch', label: 'สาขา', color: '#9f7aea', bg: '#faf5ff' },
+        { key: 'sub', label: 'รายย่อย', color: '#48bb78', bg: '#f0fff4' }
+    ];
+    el.innerHTML = items.map(s =>
+        `<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:${s.bg};border-left:4px solid ${s.color};border-radius:6px;margin-bottom:6px;">
+            <div style="flex:1;">
+                <div style="font-weight:700;font-size:0.82rem;color:${s.color};">${s.label}</div>
+                <div style="font-size:0.7rem;color:#718096;">${src[s.key].n} Batch</div>
+            </div>
+            <div style="font-weight:800;font-size:1rem;color:#2d3748;">${src[s.key].w.toFixed(2)} <span style="font-size:0.7rem;font-weight:600;color:#a0aec0;">ตัน</span></div>
+        </div>`
+    ).join('') +
+    `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#e2e8f0;border-radius:6px;font-weight:800;color:#2d3748;">
+        <span>รวมทั้งหมด (${grandN} Batch)</span>
+        <span style="font-size:1.05rem;">${grandW.toFixed(2)} ตัน</span>
+    </div>`;
+}
+
+function cardHTML(b, slot) {
+    const from = b.fromLock ? `<div class="b-from">จาก ${NAMES[b.fromLock]}</div>` : '';
+    const hiddenCls = b.hidden ? ' batch-hidden' : '';
+    return `<div class="batch-card src-${b.source}${hiddenCls}" draggable="true"
+        ondragstart="onDS(event,'${slot}','${b.id}')" ondragend="onDE(event)"
+        onclick="openEdit('${slot}','${b.id}')"
+        title="คลิกเพื่อแก้ไข | ${b.code} | ${b.weight}T | ${SRC[b.source]}${b.fromLock?' | จาก '+NAMES[b.fromLock]:''}${b.hidden?' | ซ่อน':''}">
+        <div class="b-code">${b.code}</div>
+        <div class="b-weight">${b.weight} ตัน</div>
+        <div class="b-source">${SRC[b.source]}</div>${from}</div>`;
+}
+
+// ========= EDIT BATCH =========
+let editSlot = null, editId = null;
+
+function openEdit(slot, id) {
+    const batch = slots[slot].find(b => b.id === id);
+    if (!batch) return;
+    editSlot = slot; editId = id;
+
+    document.getElementById('editTitle').textContent = `แก้ไข ${batch.code}`;
+    document.getElementById('editCode').value = batch.code;
+    document.getElementById('editWeight').value = batch.weight;
+    document.getElementById('editSource').value = batch.source;
+    document.getElementById('editLocation').value = slot;
+    setEditHiddenState(!!batch.hidden);
+
+    let info = `ตำแหน่งปัจจุบัน: <strong>${NAMES[slot]}</strong>`;
+    if (batch.fromLock) info += ` &nbsp;|&nbsp; มาจาก: <span>${NAMES[batch.fromLock]}</span>`;
+    document.getElementById('editInfo').innerHTML = info;
+
+    document.getElementById('editModal').classList.add('active');
+}
+
+function closeEdit() { document.getElementById('editModal').classList.remove('active'); editSlot=null; editId=null; }
+
+const SVG_EYE_OPEN_SM = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+const SVG_EYE_CLOSED_SM = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+const SVG_EYE_OPEN = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+const SVG_EYE_CLOSED = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+
+function setEditHiddenState(isHidden) {
+    document.getElementById('editHidden').value = isHidden ? '1' : '0';
+    const btn = document.getElementById('editHiddenBtn');
+    btn.innerHTML = isHidden
+        ? SVG_EYE_CLOSED + '<span>ซ่อนอยู่</span>'
+        : SVG_EYE_OPEN + '<span>นับน้ำหนัก</span>';
+    btn.classList.toggle('is-hidden', isHidden);
+    btn.title = isHidden ? 'ซ่อนอยู่ (ไม่นับน้ำหนัก) — กดเพื่อแสดง' : 'แสดงอยู่ — กดเพื่อซ่อน';
+}
+
+function toggleEditHidden() {
+    const cur = document.getElementById('editHidden').value === '1';
+    setEditHiddenState(!cur);
+}
+
+function saveBatch() {
+    if (!editSlot || !editId) return;
+    const arr = slots[editSlot];
+    const idx = arr.findIndex(b => b.id === editId);
+    if (idx === -1) { closeEdit(); return; }
+
+    const batch = arr[idx];
+    const oldCode = batch.code;
+    const oldWeight = batch.weight;
+    const oldSource = batch.source;
+    const oldHidden = !!batch.hidden;
+
+    const newCode = document.getElementById('editCode').value.trim();
+    const newWeight = parseFloat(document.getElementById('editWeight').value);
+    const newSource = document.getElementById('editSource').value;
+    const newLoc = document.getElementById('editLocation').value;
+    const newHidden = document.getElementById('editHidden').value === '1';
+
+    if (!newCode || !newWeight) { alert('กรุณากรอกข้อมูลให้ครบ'); return; }
+
+    batch.code = newCode;
+    batch.weight = newWeight;
+    batch.source = newSource;
+    batch.hidden = newHidden;
+
+    if (newLoc !== editSlot) {
+        arr.splice(idx, 1);
+        const fromIsLock = editSlot.startsWith('L');
+        const toIsHopper = newLoc.startsWith('hopper');
+        if (fromIsLock && toIsHopper) {
+            batch.fromLock = editSlot;
+            logAction('move', batch.code, editSlot, newLoc, batch.weight);
+        }
+        if (!fromIsLock && !toIsHopper) batch.fromLock = null;
+        slots[newLoc].push(batch);
+        toast(`ย้าย ${batch.code}: ${NAMES[editSlot]} → ${NAMES[newLoc]}`);
+    } else {
+        // Build change details
+        const changes = [];
+        if (oldCode !== newCode) changes.push(`ชื่อ: ${oldCode}→${newCode}`);
+        if (oldWeight !== newWeight) changes.push(`น้ำหนัก: ${oldWeight}→${newWeight}`);
+        if (oldSource !== newSource) changes.push(`แหล่ง: ${SRC[oldSource]}→${SRC[newSource]}`);
+        if (oldHidden !== newHidden) changes.push(newHidden ? 'ซ่อน' : 'แสดง');
+        if (changes.length) {
+            logAction('edit', newCode, editSlot, null, newWeight, changes.join(', '));
+        }
+        toast(`แก้ไข ${batch.code} สำเร็จ`);
+    }
+
+    save(); renderAll(); closeEdit();
+}
+
+function deleteBatch() {
+    if (!editSlot || !editId) return;
+    const arr = slots[editSlot];
+    const batch = arr.find(b => b.id === editId);
+    if (!batch) { closeEdit(); return; }
+    if (!confirm(`ลบ ${batch.code} (${batch.weight} ตัน) ออกจาก ${NAMES[editSlot]}?`)) return;
+    logAction('delete', batch.code, editSlot, null, batch.weight);
+    slots[editSlot] = arr.filter(b => b.id !== editId);
+    save(); renderAll(); closeEdit();
+    toast(`ลบ ${batch.code} สำเร็จ`);
+}
+
+function renderSlot(k) {
+    const body = document.getElementById(`blocks-${k}`);
+    const foot = document.getElementById(`total-${k}`);
+    if (!body) return;
+    const arr = slots[k];
+    if (!arr.length) { body.innerHTML = '<div class="col-empty">ว่าง</div>'; foot.textContent = ''; }
+    else {
+        body.innerHTML = arr.map(b => cardHTML(b, k)).join('');
+        foot.textContent = `รวม ${arr.reduce((s,b)=>s+(b.hidden?0:b.weight),0).toFixed(2)} ตัน`;
+    }
+}
+
+function updateStyles() {
+    getAllLockKeys().forEach(k => {
+        const el = document.getElementById(`drop-${k}`);
+        if (!el) return;
+        const has = slots[k] && slots[k].length > 0;
+        el.classList.toggle('has-batch', has);
+        el.classList.toggle('empty', !has);
+        const badge = document.getElementById(`badge-${k}`);
+        if (badge) {
+            const hiddenCount = slots[k].filter(b => b.hidden).length;
+            const visibleCount = slots[k].length - hiddenCount;
+            badge.textContent = has ? `${visibleCount} Batch${hiddenCount ? ' (+'+hiddenCount+' ซ่อน)' : ''}` : 'ว่าง';
+            badge.classList.toggle('active', has);
+        }
+    });
+}
+
+function logAction(type, batch, from, to, weight, detail) {
+    moveHistory.unshift({
+        type: type,
+        batch: batch,
+        from: from,
+        to: to || null,
+        weight: weight,
+        detail: detail || null,
+        time: new Date().toLocaleTimeString('th-TH')
+    });
+    if (moveHistory.length > 100) moveHistory.length = 100;
+}
+
+function renderLog() {
+    const el = document.getElementById('moveLog');
+    if (!moveHistory.length) { el.innerHTML = '<div style="color:#a0aec0;text-align:center;padding:16px;font-size:0.8rem;">ยังไม่มีประวัติ</div>'; return; }
+    el.innerHTML = moveHistory.slice(0,30).map(m => {
+        const type = m.type || 'move';
+        const time = `<span style="color:#a0aec0;font-size:0.7rem;display:block;">${m.time}</span>`;
+        if (type === 'add') {
+            return `<div class="log-item"><span style="color:#48bb78;font-weight:700;">➕ เพิ่ม</span> <strong>${m.batch}</strong> ${m.weight}T ที่ ${NAMES[m.from]||m.from} ${time}</div>`;
+        }
+        if (type === 'edit') {
+            const detail = m.detail ? `<div style="font-size:0.68rem;color:#718096;margin-top:1px;">${m.detail}</div>` : '';
+            return `<div class="log-item"><span style="color:#9f7aea;font-weight:700;">✏️ แก้ไข</span> <strong>${m.batch}</strong> ที่ ${NAMES[m.from]||m.from} ${detail}${time}</div>`;
+        }
+        if (type === 'delete') {
+            return `<div class="log-item"><span style="color:#e53e3e;font-weight:700;">🗑 ลบ</span> <strong>${m.batch}</strong> ${m.weight}T จาก ${NAMES[m.from]||m.from} ${time}</div>`;
+        }
+        if (type === 'clear') {
+            return `<div class="log-item"><span style="color:#e53e3e;font-weight:700;">🧹 ล้าง</span> <strong>${m.batch}</strong> ${m.weight}T จาก ${NAMES[m.from]||m.from} ${time}</div>`;
+        }
+        if (type === 'produce') {
+            return `<div class="log-item"><span style="color:#d69e2e;font-weight:700;">⚙ ผลิต</span> <strong>${m.batch}</strong> ${m.weight}T จาก ${NAMES[m.from]||m.from} ${time}</div>`;
+        }
+        // move (legacy + new)
+        return `<div class="log-item"><span style="color:#3182ce;font-weight:700;">📦 ย้าย</span> <strong>${m.batch}</strong> ${m.weight}T ${NAMES[m.from]||m.from} <span class="log-arrow">&rarr;</span> ${NAMES[m.to]||m.to} ${time}</div>`;
+    }).join('');
+}
+
+function renderFIFO() {
+    const panel = document.getElementById('fifoPanel');
+    const hops = [
+        { key:'hopperA', name:'Hopper A', color:'#48bb78' },
+        { key:'hopperB', name:'Hopper B', color:'#4299e1' },
+        { key:'hopperC', name:'Hopper C', color:'#9f7aea' }
+    ];
+
+    let html = '';
+    hops.forEach(h => {
+        const arr = [...slots[h.key]];
+        const total = arr.reduce((s,b)=>s+(b.hidden?0:b.weight),0);
+
+        html += `<div class="fifo-hopper">`;
+        html += `<div class="fifo-hdr">
+            <div class="fifo-hdr-dot" style="background:${h.color}"></div>
+            <span class="fifo-hdr-name">${h.name}</span>
+            <span class="fifo-hdr-total">${arr.length} Batch &bull; ${total.toFixed(2)}T</span>
+        </div>`;
+
+        if (!arr.length) {
+            html += `<div class="fifo-empty">ว่าง</div>`;
+        } else {
+            arr.forEach((b, i) => {
+                const numClass = i===0?'n1':i===1?'n2':i===2?'n3':'nrest';
+                const isNext = i===0;
+                const from = b.fromLock ? `<span class="fifo-from">← ${NAMES[b.fromLock]}</span>` : '';
+                html += `<div class="fifo-row${isNext?' fifo-next':''}">
+                    <div class="fifo-num ${numClass}">${i+1}</div>
+                    <span class="fifo-code">${b.code}</span>
+                    <span class="fifo-wt">${b.weight}T</span>
+                    ${from}
+                    ${isNext?`<button class="fifo-btn" onclick="consumeBatch('${h.key}','${b.id}')">ผลิต</button>`:''}
+                </div>`;
+            });
+        }
+        html += `</div>`;
+    });
+
+    panel.innerHTML = html;
+}
+
+function clearHopper(key, e) {
+    e.stopPropagation();
+    const arr = slots[key];
+    if (!arr.length) { toast(`${NAMES[key]} ว่างอยู่แล้ว`); return; }
+    const total = arr.reduce((s,b)=>s+(b.hidden?0:b.weight),0);
+    if (!confirm(`ล้าง ${NAMES[key]} ทั้งหมด?\n${arr.length} Batch, ${total.toFixed(2)} ตัน`)) return;
+    arr.forEach(b => logAction('clear', b.code, key, null, b.weight));
+    slots[key] = [];
+    save(); renderAll();
+    toast(`ล้าง ${NAMES[key]} สำเร็จ`);
+}
+
+function consumeBatch(slot, id) {
+    const arr = slots[slot];
+    const batch = arr.find(b => b.id === id);
+    if (!batch) return;
+    if (!confirm(`ผลิต ${batch.code} (${batch.weight} ตัน) จาก ${NAMES[slot]}?`)) return;
+    logAction('produce', batch.code, slot, null, batch.weight);
+    slots[slot] = arr.filter(b => b.id !== id);
+    save(); renderAll();
+    toast(`ผลิต ${batch.code} จาก ${NAMES[slot]} สำเร็จ`);
+}
+
+function renderSummary() {
+    // Hopper summary
+    let hopperTotal = 0, hopperCount = 0;
+    let hopperHtml = ['hopperA','hopperB','hopperC'].map(k => {
+        const arr = slots[k];
+        const slotH = isSlotHidden(k);
+        const total = slotH ? 0 : arr.reduce((s,b)=>s+(b.hidden?0:b.weight),0);
+        hopperTotal += total; hopperCount += (slotH ? 0 : arr.length);
+        const detail = arr.map(b => `${b.code}${b.fromLock?` <span style="color:#e53e3e;">(${NAMES[b.fromLock]})</span>`:''}`).join(', ') || '-';
+        return `<tr><td><strong>${NAMES[k]}</strong></td><td>${detail}</td><td>${total.toFixed(2)}</td><td>${arr.length}</td></tr>`;
+    }).join('');
+    hopperHtml += `<tr style="background:#c6f6d5;font-weight:700;"><td>รวม Hopper</td><td></td><td>${hopperTotal.toFixed(2)}</td><td>${hopperCount}</td></tr>`;
+    document.getElementById('summaryBody').innerHTML = hopperHtml;
+
+    // Lock summary
+    const lockKeys = getAllLockKeys();
+    let lockHtml = '';
+    let zoneATot = 0, zoneABatch = 0, zoneBTot = 0, zoneBBatch = 0;
+
+    const zoneAKeys = lockConfig.zoneA.map(l => l.key);
+    const zoneBKeys = lockConfig.zoneB.map(l => l.key);
+
+    // Zone A locks
+    lockConfig.zoneA.forEach(l => {
+        const arr = slots[l.key] || [];
+        const slotH = isSlotHidden(l.key);
+        const total = slotH ? 0 : arr.reduce((s,b)=>s+(b.hidden?0:b.weight),0);
+        const count = slotH ? 0 : arr.length;
+        zoneATot += total; zoneABatch += count;
+        const detail = arr.map(b => b.code).join(', ') || '-';
+        const dimStyle = slotH ? ' style="opacity:0.4;"' : '';
+        lockHtml += `<tr${dimStyle}><td><strong>${NAMES[l.key]}</strong>${slotH?' 🚫':''}</td><td>${detail}</td><td>${total.toFixed(2)}</td><td>${count}</td></tr>`;
+    });
+    if (lockConfig.zoneA.length) {
+        lockHtml += `<tr style="background:#fed7d7;font-weight:700;"><td>รวม Zone A</td><td></td><td>${zoneATot.toFixed(2)}</td><td>${zoneABatch}</td></tr>`;
+    }
+
+    // Zone B locks
+    lockConfig.zoneB.forEach(l => {
+        const arr = slots[l.key] || [];
+        const slotH = isSlotHidden(l.key);
+        const total = slotH ? 0 : arr.reduce((s,b)=>s+(b.hidden?0:b.weight),0);
+        const count = slotH ? 0 : arr.length;
+        zoneBTot += total; zoneBBatch += count;
+        const detail = arr.map(b => b.code).join(', ') || '-';
+        const dimStyle = slotH ? ' style="opacity:0.4;"' : '';
+        lockHtml += `<tr${dimStyle}><td><strong>${NAMES[l.key]}</strong>${slotH?' 🚫':''}</td><td>${detail}</td><td>${total.toFixed(2)}</td><td>${count}</td></tr>`;
+    });
+    if (lockConfig.zoneB.length) {
+        lockHtml += `<tr style="background:#fefcbf;font-weight:700;"><td>รวม Zone B</td><td></td><td>${zoneBTot.toFixed(2)}</td><td>${zoneBBatch}</td></tr>`;
+    }
+
+    // Grand total
+    const grandTotal = zoneATot + zoneBTot;
+    const grandBatch = zoneABatch + zoneBBatch;
+    lockHtml += `<tr style="background:#e2e8f0;font-weight:800;"><td>รวมทั้งหมด</td><td></td><td>${grandTotal.toFixed(2)}</td><td>${grandBatch}</td></tr>`;
+
+    document.getElementById('lockSummaryBody').innerHTML = lockHtml;
+}
+
+function loadSampleData() {
+    // Reset to default lock config
+    lockConfig = {
+        zoneA: [
+            { key:'L1', name:'L1' }, { key:'L2', name:'L2' },
+            { key:'L3', name:'L3' }, { key:'L4', name:'L4' }
+        ],
+        zoneB: [
+            { key:'L7', name:'L7' }, { key:'L6', name:'L6' }, { key:'L5', name:'L5' }
+        ]
+    };
+    saveLockConfigStorage();
+    rebuildSlotsAndNames();
+    slots = {
+        hopperA: [
+            { id:'a1', code:'B.351/VD/30', weight:170, source:'buying', fromLock:'L1', timestamp:'2026-05-13T06:00:00Z' },
+            { id:'a2', code:'B.253/RS/30', weight:120, source:'branch', fromLock:'L3', timestamp:'2026-05-13T06:30:00Z' },
+            { id:'a3', code:'B.356', weight:10, source:'sub', fromLock:null, timestamp:'2026-05-13T07:00:00Z' }
+        ],
+        hopperB: [
+            { id:'b1', code:'B.349/B/20', weight:20, source:'buying', fromLock:'L7', timestamp:'2026-05-13T06:10:00Z' },
+            { id:'b2', code:'B.352/B/30', weight:120, source:'branch', fromLock:'L5', timestamp:'2026-05-13T06:40:00Z' }
+        ],
+        hopperC: [
+            { id:'c1', code:'B.352/VD/30', weight:30, source:'buying', fromLock:'L2', timestamp:'2026-05-13T06:15:00Z' },
+            { id:'c2', code:'B.353/RS/30', weight:190, source:'branch', fromLock:null, timestamp:'2026-05-13T06:45:00Z' },
+            { id:'c3', code:'B.355', weight:100, source:'sub', fromLock:'L4', timestamp:'2026-05-13T07:10:00Z' }
+        ],
+        L1: [
+            { id:'l1a', code:'B.351', weight:30, source:'buying', fromLock:null, timestamp:'2026-05-12T10:00:00Z' },
+            { id:'l1b', code:'B.354', weight:20, source:'sub', fromLock:null, timestamp:'2026-05-13T08:00:00Z' }
+        ],
+        L2: [
+            { id:'l2a', code:'B.352', weight:28, source:'branch', fromLock:null, timestamp:'2026-05-12T11:00:00Z' },
+            { id:'l2b', code:'B.354', weight:12, source:'buying', fromLock:null, timestamp:'2026-05-13T08:30:00Z' }
+        ],
+        L3: [
+            { id:'l3a', code:'B.354', weight:10, source:'buying', fromLock:null, timestamp:'2026-05-12T12:00:00Z' },
+            { id:'l3b', code:'B.355', weight:12, source:'sub', fromLock:null, timestamp:'2026-05-13T09:00:00Z' },
+            { id:'l3c', code:'B.354', weight:10, source:'branch', fromLock:null, timestamp:'2026-05-13T09:30:00Z' }
+        ],
+        L4: [
+            { id:'l4a', code:'B.352', weight:12, source:'buying', fromLock:null, timestamp:'2026-05-13T09:00:00Z' },
+            { id:'l4b', code:'B.356', weight:12, source:'sub', fromLock:null, timestamp:'2026-05-13T10:00:00Z' }
+        ],
+        L5: [
+            { id:'l5a', code:'B.356', weight:90, source:'buying', fromLock:null, timestamp:'2026-05-13T07:00:00Z' },
+            { id:'l5b', code:'B.357', weight:99, source:'branch', fromLock:null, timestamp:'2026-05-13T08:00:00Z' }
+        ],
+        L6: [
+            { id:'l6a', code:'B.351', weight:30, source:'buying', fromLock:null, timestamp:'2026-05-13T07:30:00Z' },
+            { id:'l6b', code:'B.358', weight:20, source:'sub', fromLock:null, timestamp:'2026-05-13T09:00:00Z' }
+        ],
+        L7: [
+            { id:'l7a', code:'B.351', weight:20, source:'buying', fromLock:null, timestamp:'2026-05-13T06:00:00Z' },
+            { id:'l7b', code:'B.359', weight:16, source:'branch', fromLock:null, timestamp:'2026-05-13T09:30:00Z' },
+            { id:'l7c', code:'B.354', weight:10, source:'sub', fromLock:null, timestamp:'2026-05-13T10:00:00Z' }
+        ]
+    };
+    moveHistory = [
+        { type:'move', batch:'B.351/VD/30', from:'L1', to:'hopperA', weight:170, time:'06:00' },
+        { type:'move', batch:'B.253/RS/30', from:'L3', to:'hopperA', weight:120, time:'06:30' },
+        { type:'move', batch:'B.349/B/20', from:'L7', to:'hopperB', weight:20, time:'06:10' },
+        { type:'move', batch:'B.352/B/30', from:'L5', to:'hopperB', weight:120, time:'06:40' },
+        { type:'move', batch:'B.352/VD/30', from:'L2', to:'hopperC', weight:30, time:'06:15' },
+        { type:'move', batch:'B.355', from:'L4', to:'hopperC', weight:100, time:'07:10' },
+    ];
+    buildLayout();
+    save(); renderAll();
+    setupDrop(); setupHeaderDelete();
+    toast('โหลดข้อมูลตัวอย่างสำเร็จ');
+}
+
+function clearAllData() {
+    if (!confirm('ล้างข้อมูลทั้งหมด?')) return;
+    Object.keys(slots).forEach(k => slots[k] = []);
+    moveHistory = [];
+    save(); renderAll(); toast('ล้างข้อมูลสำเร็จ');
+}
+
+function closeModal() { document.getElementById('modalBg').classList.remove('active'); }
+function toast(msg) { const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
+document.getElementById('modalBg').addEventListener('click', function(e){ if(e.target===this) closeModal(); });
+document.getElementById('editModal').addEventListener('click', function(e){ if(e.target===this) closeEdit(); });
+document.getElementById('batchConfigModal').addEventListener('click', function(e){ if(e.target===this) closeBatchConfig(); });
+
+// ========= BATCH CONFIG =========
+let batchConfig = { buying:'B.356', branch:'B.357', sub:'B.358' };
+
+function loadBatchConfig() {
+    try { const d=JSON.parse(localStorage.getItem('ffb3_batchcfg')); if(d) batchConfig=d; } catch(e){}
+    updateBatchPill();
+}
+
+function updateBatchPill() {
+    document.getElementById('batchPill').innerHTML =
+        `<span style="margin-right:4px;">Batch วันนี้:</span>` +
+        `<span style="background:#ed8936;color:#fff;padding:1px 6px;border-radius:4px;font-size:0.72rem;margin-right:3px;">${batchConfig.buying}</span>` +
+        `<span style="background:#9f7aea;color:#fff;padding:1px 6px;border-radius:4px;font-size:0.72rem;margin-right:3px;">${batchConfig.branch}</span>` +
+        `<span style="background:#48bb78;color:#fff;padding:1px 6px;border-radius:4px;font-size:0.72rem;">${batchConfig.sub}</span>`;
+}
+
+function openBatchConfig() {
+    document.getElementById('cfgBuying').value = batchConfig.buying;
+    document.getElementById('cfgBranch').value = batchConfig.branch;
+    document.getElementById('cfgSub').value = batchConfig.sub;
+    document.getElementById('batchConfigModal').classList.add('active');
+}
+
+function closeBatchConfig() { document.getElementById('batchConfigModal').classList.remove('active'); }
+
+function onSourceChange() {
+    const src = document.getElementById('fSource').value;
+    const codeInput = document.getElementById('fCode');
+    if (!src) { codeInput.placeholder = 'เลือกแหล่งที่มาก่อน'; return; }
+
+    const prefix = src === 'buying' ? batchConfig.buying : src === 'branch' ? batchConfig.branch : batchConfig.sub;
+    codeInput.value = prefix + '/';
+    codeInput.placeholder = prefix + '/VD/30';
+    codeInput.focus();
+    codeInput.setSelectionRange(codeInput.value.length, codeInput.value.length);
+}
+
+function saveBatchConfig() {
+    batchConfig.buying = document.getElementById('cfgBuying').value.trim() || 'B.000';
+    batchConfig.branch = document.getElementById('cfgBranch').value.trim() || 'B.000';
+    batchConfig.sub = document.getElementById('cfgSub').value.trim() || 'B.000';
+    localStorage.setItem('ffb3_batchcfg', JSON.stringify(batchConfig));
+    updateBatchPill();
+    closeBatchConfig();
+    toast('บันทึก Batch วันนี้สำเร็จ');
+}
+document.getElementById('previewOverlay').addEventListener('click', function(e){ if(e.target===this) closePreview(); });
+
+// ========= CAPTURE / SHARE =========
+let capturedBlob = null;
+let capturedDataUrl = null;
+
+function captureRamp() {
+    const area = document.getElementById('captureArea');
+    const wm = document.getElementById('captureWatermark');
+    const now = new Date();
+    document.getElementById('watermarkTime').textContent =
+        now.toLocaleDateString('th-TH',{year:'numeric',month:'short',day:'numeric'}) + ' ' +
+        now.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
+
+    area.classList.add('capturing');
+    toast('กำลังบันทึกรูป...');
+
+    html2canvas(area, { scale: 2, useCORS: true, backgroundColor: '#dce3ec' }).then(canvas => {
+        area.classList.remove('capturing');
+        capturedDataUrl = canvas.toDataURL('image/png');
+        canvas.toBlob(blob => { capturedBlob = blob; });
+        document.getElementById('previewImg').src = capturedDataUrl;
+        document.getElementById('previewOverlay').classList.add('active');
+    }).catch(() => {
+        area.classList.remove('capturing');
+        toast('เกิดข้อผิดพลาด ลองใหม่อีกครั้ง');
+    });
+}
+
+function downloadImage() {
+    if (!capturedDataUrl) return;
+    const a = document.createElement('a');
+    const ts = new Date().toISOString().slice(0,16).replace(/[T:]/g,'-');
+    a.href = capturedDataUrl;
+    a.download = `FFB-Ramp-${ts}.png`;
+    a.click();
+    toast('ดาวน์โหลดรูปสำเร็จ');
+}
+
+async function shareImage() {
+    if (!capturedBlob) { downloadImage(); return; }
+
+    if (navigator.share && navigator.canShare) {
+        const ts = new Date().toISOString().slice(0,16).replace(/[T:]/g,'-');
+        const file = new File([capturedBlob], `FFB-Ramp-${ts}.png`, { type: 'image/png' });
+        const shareData = { title: 'FFB Ramp Simulator', text: 'สถานะแรมป์ปาล์ม', files: [file] };
+        try {
+            if (navigator.canShare(shareData)) {
+                await navigator.share(shareData);
+                toast('แชร์สำเร็จ');
+                closePreview();
+                return;
+            }
+        } catch(e) {
+            if (e.name !== 'AbortError') downloadImage();
+            return;
+        }
+    }
+    downloadImage();
+}
+
+async function shareRamp() {
+    await captureRamp();
+}
+
+function closePreview() {
+    document.getElementById('previewOverlay').classList.remove('active');
+}
+
+// ========= SPLIT BATCH =========
+let splitFrom = null, splitTo = null, splitBatchId = null, splitDropIdx = 0, splitMode = 'all';
+let splitBatchRef = null;
+
+function openSplitPicker(from, to, batchId, dropIdx) {
+    splitFrom = from; splitTo = to; splitBatchId = batchId; splitDropIdx = dropIdx;
+    const batch = slots[from].find(b => b.id === batchId);
+    if (!batch) return;
+    splitBatchRef = batch;
+
+    document.getElementById('splitTitle').innerHTML =
+        `ย้าย <strong>${batch.code}</strong> → <strong>${NAMES[to]}</strong>`;
+    document.getElementById('splitInfo').innerHTML =
+        `<div style="font-weight:700;font-size:0.9rem;color:#2b6cb0;">${batch.code}</div>
+        <div style="font-size:0.8rem;color:#718096;">${batch.weight} ตัน · ${SRC[batch.source]} · จาก ${NAMES[from]}</div>`;
+
+    document.getElementById('splitWeight').value = batch.weight;
+    document.getElementById('splitWeight').max = batch.weight;
+    document.getElementById('splitSlider').max = batch.weight;
+    document.getElementById('splitSlider').value = batch.weight;
+    document.getElementById('splitWeight').oninput = onSplitWeightChange;
+
+    setSplitMode('all');
+    document.getElementById('splitModal').classList.add('active');
+}
+
+function closeSplit() {
+    document.getElementById('splitModal').classList.remove('active');
+    splitFrom = null; splitTo = null; splitBatchId = null; splitBatchRef = null;
+}
+
+function setSplitMode(mode) {
+    splitMode = mode;
+    document.getElementById('splitOptAll').classList.toggle('active', mode === 'all');
+    document.getElementById('splitOptPart').classList.toggle('active', mode === 'part');
+    document.getElementById('splitPartArea').style.display = mode === 'part' ? 'block' : 'none';
+    if (mode === 'part' && splitBatchRef) {
+        const w = splitBatchRef.weight;
+        document.getElementById('splitWeight').value = (w / 2).toFixed(2);
+        document.getElementById('splitSlider').value = (w / 2).toFixed(2);
+        onSplitWeightChange();
+        document.getElementById('splitWeight').focus();
+        document.getElementById('splitWeight').select();
+    }
+}
+
+function onSplitWeightChange() {
+    if (!splitBatchRef) return;
+    let val = parseFloat(document.getElementById('splitWeight').value) || 0;
+    if (val > splitBatchRef.weight) val = splitBatchRef.weight;
+    if (val < 0) val = 0;
+    const remain = (splitBatchRef.weight - val).toFixed(2);
+    document.getElementById('splitRemain').textContent = remain;
+    document.getElementById('splitSlider').value = val;
+}
+
+function confirmSplit() {
+    if (!splitFrom || !splitTo || !splitBatchId) return;
+    const srcArr = slots[splitFrom];
+    const srcIdx = srcArr.findIndex(b => b.id === splitBatchId);
+    if (srcIdx === -1) { closeSplit(); return; }
+
+    const batch = srcArr[srcIdx];
+
+    if (splitMode === 'all') {
+        // Move entire batch
+        srcArr.splice(srcIdx, 1);
+        batch.fromLock = splitFrom;
+        logAction('move', batch.code, splitFrom, splitTo, batch.weight);
+        slots[splitTo].splice(splitDropIdx, 0, batch);
+        save(); renderAll();
+        toast(`ย้าย ${batch.code} (${batch.weight}T): ${NAMES[splitFrom]} → ${NAMES[splitTo]}`);
+    } else {
+        // Split: partial weight
+        let moveW = parseFloat(document.getElementById('splitWeight').value) || 0;
+        if (moveW <= 0) { alert('กรุณาใส่น้ำหนักที่ต้องการย้าย'); return; }
+        if (moveW >= batch.weight) {
+            // Move all if weight equals or exceeds
+            srcArr.splice(srcIdx, 1);
+            batch.fromLock = splitFrom;
+            logAction('move', batch.code, splitFrom, splitTo, batch.weight);
+            slots[splitTo].splice(splitDropIdx, 0, batch);
+            save(); renderAll();
+            toast(`ย้าย ${batch.code} (${batch.weight}T): ${NAMES[splitFrom]} → ${NAMES[splitTo]}`);
+        } else {
+            // Split: reduce original, create new batch in hopper
+            const remain = +(batch.weight - moveW).toFixed(2);
+            batch.weight = remain;
+
+            const newBatch = {
+                id: Date.now().toString(),
+                code: batch.code,
+                weight: +moveW.toFixed(2),
+                source: batch.source,
+                fromLock: splitFrom,
+                timestamp: new Date().toISOString()
+            };
+            logAction('move', `${batch.code} (แบ่ง ${moveW.toFixed(2)}T)`, splitFrom, splitTo, moveW);
+            slots[splitTo].splice(splitDropIdx, 0, newBatch);
+            save(); renderAll();
+            toast(`แบ่ง ${batch.code}: ${moveW.toFixed(2)}T → ${NAMES[splitTo]} | เหลือ ${remain}T ใน ${NAMES[splitFrom]}`);
+        }
+    }
+    closeSplit();
+}
+
+document.getElementById('splitModal').addEventListener('click', function(e){ if(e.target===this) closeSplit(); });
+
+// ========= LOCK MOVE PICKER =========
+let lockMoveFrom = null, lockMoveTo = null;
+
+function openLockMovePicker(fromKey, toKey) {
+    lockMoveFrom = fromKey;
+    lockMoveTo = toKey;
+    const batches = slots[fromKey];
+
+    document.getElementById('lockMoveTitle').innerHTML =
+        `ย้าย <strong>${NAMES[fromKey]}</strong> → <strong>${NAMES[toKey]}</strong>`;
+
+    const list = document.getElementById('lockMoveList');
+    list.innerHTML = batches.map((b, i) =>
+        `<label class="lm-item src-${b.source} checked" onclick="setTimeout(updateLockMoveCount,10)">
+            <input type="checkbox" checked data-idx="${i}">
+            <div class="lm-info">
+                <div class="lm-code">${b.code}</div>
+                <div class="lm-detail">${b.weight} ตัน · ${SRC[b.source]}</div>
+            </div>
+        </label>`
+    ).join('');
+
+    document.getElementById('lockMoveSelectAll').checked = true;
+    updateLockMoveCount();
+    document.getElementById('lockMoveModal').classList.add('active');
+}
+
+function closeLockMove() {
+    document.getElementById('lockMoveModal').classList.remove('active');
+    lockMoveFrom = null; lockMoveTo = null;
+}
+
+function toggleLockMoveAll() {
+    const checked = document.getElementById('lockMoveSelectAll').checked;
+    document.querySelectorAll('#lockMoveList input[type=checkbox]').forEach(cb => {
+        cb.checked = checked;
+        cb.closest('.lm-item').classList.toggle('checked', checked);
+    });
+    updateLockMoveCount();
+}
+
+function updateLockMoveCount() {
+    const cbs = [...document.querySelectorAll('#lockMoveList input[type=checkbox]')];
+    const checked = cbs.filter(cb => cb.checked);
+    const batches = slots[lockMoveFrom] || [];
+
+    // Update item styling
+    cbs.forEach(cb => cb.closest('.lm-item').classList.toggle('checked', cb.checked));
+
+    // Update select all
+    document.getElementById('lockMoveSelectAll').checked = checked.length === cbs.length;
+
+    // Compute selected total
+    let totalW = 0;
+    checked.forEach(cb => {
+        const idx = parseInt(cb.dataset.idx);
+        if (batches[idx]) totalW += batches[idx].weight;
+    });
+
+    document.getElementById('lockMoveCount').textContent = `${checked.length}/${cbs.length} Batch`;
+    document.getElementById('lockMoveTotal').textContent = `รวมที่เลือก: ${totalW.toFixed(2)} ตัน`;
+    document.getElementById('lockMoveBtn').disabled = !checked.length;
+}
+
+function confirmLockMove() {
+    if (!lockMoveFrom || !lockMoveTo) return;
+    const cbs = [...document.querySelectorAll('#lockMoveList input[type=checkbox]')];
+    const selectedIdx = cbs.filter(cb => cb.checked).map(cb => parseInt(cb.dataset.idx));
+
+    if (!selectedIdx.length) return;
+
+    const batches = slots[lockMoveFrom];
+    const toMove = selectedIdx.map(i => batches[i]).filter(Boolean);
+
+    toMove.forEach(b => {
+        b.fromLock = lockMoveFrom;
+        logAction('move', b.code, lockMoveFrom, lockMoveTo, b.weight);
+    });
+
+    slots[lockMoveTo] = slots[lockMoveTo].concat(toMove);
+
+    // Remove moved batches from source (reverse order to keep indices valid)
+    selectedIdx.sort((a,b) => b - a).forEach(i => batches.splice(i, 1));
+
+    const totalW = toMove.reduce((s,b) => s + b.weight, 0);
+    save(); renderAll();
+    toast(`ย้าย ${toMove.length} Batch (${totalW.toFixed(2)}T): ${NAMES[lockMoveFrom]} → ${NAMES[lockMoveTo]}`);
+    closeLockMove();
+}
+
+document.getElementById('lockMoveModal').addEventListener('click', function(e){ if(e.target===this) closeLockMove(); });
+document.getElementById('exportOverlay').addEventListener('click', function(e){ if(e.target===this) closeExportReport(); });
+
+// ========= EXPORT REPORT =========
+function openExportReport() {
+    const content = document.getElementById('exportReportContent');
+    content.innerHTML = buildReportHTML();
+    document.getElementById('exportOverlay').classList.add('active');
+}
+function closeExportReport() { document.getElementById('exportOverlay').classList.remove('active'); }
+
+function buildReportHTML() {
+    const selDate = new Date(currentDate + 'T00:00:00');
+    const dateStr = selDate.toLocaleDateString('th-TH', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+    const dateShort = selDate.toLocaleDateString('th-TH', { day:'2-digit', month:'2-digit', year:'numeric' });
+    const timeStr = new Date().toLocaleTimeString('th-TH', { hour:'2-digit', minute:'2-digit' });
+
+    // Determine max batch columns needed
+    function getMaxBatches(lockArr, hopperKeys) {
+        let max = 0;
+        lockArr.forEach(l => { const n = (slots[l.key]||[]).filter(b=>!b.hidden).length; if(n>max) max=n; });
+        hopperKeys.forEach(k => { const n = (slots[k]||[]).filter(b=>!b.hidden).length; if(n>max) max=n; });
+        return Math.max(max, 1);
+    }
+
+    const maxA = getMaxBatches(lockConfig.zoneA, ['hopperA','hopperC']);
+    const maxB = getMaxBatches(lockConfig.zoneB, ['hopperB','hopperC']);
+
+    function batchTag(b) {
+        return `<span class="rpt-batch-tag rpt-src-${b.source}">${b.code} (${b.weight.toFixed(2)}T)</span>`;
+    }
+
+    function buildZoneTable(zoneLocks, hopperKeys, zoneLabel, zoneCls, maxCols) {
+        let thExtra = '';
+        for (let i = 0; i < maxCols; i++) {
+            thExtra += `<th>Batch ${i+1}</th>`;
+        }
+
+        let rows = '';
+
+        // Hoppers at top
+        hopperKeys.forEach(hk => {
+            const arr = (slots[hk]||[]).filter(b=>!b.hidden);
+            const hiddenArr = (slots[hk]||[]).filter(b=>b.hidden);
+            const total = arr.reduce((s,b)=>s+b.weight,0);
+            const isHidden = isSlotHidden(hk);
+            const trCls = hk==='hopperB' ? 'rpt-hopper-b' : hk==='hopperC' ? 'rpt-hopper-c' : 'rpt-hopper-row';
+            rows += `<tr class="${trCls}${isHidden?' rpt-hidden-row':''}">`;
+            rows += `<td class="rpt-loc">${NAMES[hk]}</td>`;
+            rows += `<td class="rpt-w">${isHidden?'---':total.toFixed(2)}</td>`;
+            for (let i = 0; i < maxCols; i++) {
+                rows += `<td class="rpt-batch-cell">${arr[i] ? batchTag(arr[i]) : ''}</td>`;
+            }
+            rows += `</tr>`;
+        });
+
+        // Lock rows
+        zoneLocks.forEach(l => {
+            const arr = (slots[l.key]||[]).filter(b=>!b.hidden);
+            const total = arr.reduce((s,b)=>s+b.weight,0);
+            const isH = isSlotHidden(l.key);
+            rows += `<tr${isH?' class="rpt-hidden-row"':''}>`;
+            rows += `<td class="rpt-loc">${NAMES[l.key]||l.name}</td>`;
+            rows += `<td class="rpt-w">${isH?'---':total.toFixed(2)}</td>`;
+            for (let i = 0; i < maxCols; i++) {
+                rows += `<td class="rpt-batch-cell">${arr[i] ? batchTag(arr[i]) : ''}</td>`;
+            }
+            rows += `</tr>`;
+        });
+
+        // Total row
+        let zoneTotal = 0, zoneBatchCount = 0;
+        let srcTotals = { buying:0, branch:0, sub:0 };
+        zoneLocks.forEach(l => {
+            if (isSlotHidden(l.key)) return;
+            (slots[l.key]||[]).forEach(b => { if(!b.hidden){ zoneTotal+=b.weight; zoneBatchCount++; if(srcTotals[b.source]!==undefined) srcTotals[b.source]+=b.weight; }});
+        });
+        hopperKeys.forEach(hk => {
+            if (isSlotHidden(hk)) return;
+            (slots[hk]||[]).forEach(b => { if(!b.hidden){ zoneTotal+=b.weight; zoneBatchCount++; if(srcTotals[b.source]!==undefined) srcTotals[b.source]+=b.weight; }});
+        });
+
+        rows += `<tr class="rpt-total-row">`;
+        rows += `<td>รวม${zoneLabel} (${zoneBatchCount})</td>`;
+        rows += `<td class="rpt-w">${zoneTotal.toFixed(2)}</td>`;
+        rows += `<td colspan="${maxCols}" style="font-size:0.72rem;">`;
+        if (srcTotals.buying) rows += `<span class="rpt-batch-tag rpt-src-buying">จุดรับซื้อ ${srcTotals.buying.toFixed(2)}T</span> `;
+        if (srcTotals.branch) rows += `<span class="rpt-batch-tag rpt-src-branch">สาขา ${srcTotals.branch.toFixed(2)}T</span> `;
+        if (srcTotals.sub) rows += `<span class="rpt-batch-tag rpt-src-sub">รายย่อย ${srcTotals.sub.toFixed(2)}T</span>`;
+        rows += `</td></tr>`;
+
+        return `<div class="rpt-zone rpt-zone-${zoneCls}">
+            <div class="rpt-zone-title">${zoneLabel}</div>
+            <table class="rpt-table">
+                <thead><tr><th>Location</th><th style="text-align:right;">ตัน</th>${thExtra}</tr></thead>
+                <tbody>${rows}</tbody>
+            </table>
+        </div>`;
+    }
+
+    // Zone A includes hopperA, hopperC; Zone B includes hopperB
+    const zoneAHTML = buildZoneTable(lockConfig.zoneA, ['hopperA','hopperC'], 'ฝั่ง 1,000 ตัน (Zone A)', 'a', maxA);
+    const zoneBHTML = buildZoneTable(lockConfig.zoneB, ['hopperB'], 'ฝั่ง Boiler (Zone B)', 'b', maxB);
+
+    // Grand totals by source
+    let src = { buying:{w:0,n:0}, branch:{w:0,n:0}, sub:{w:0,n:0} };
+    let grandW = 0, grandN = 0;
+    Object.keys(slots).forEach(k => {
+        if (isSlotHidden(k)) return;
+        (slots[k]||[]).forEach(b => {
+            if (b.hidden) return;
+            grandW += b.weight; grandN++;
+            if (src[b.source]) { src[b.source].w += b.weight; src[b.source].n++; }
+        });
+    });
+
+    // Layout diagram
+    const zoneANames = lockConfig.zoneA.map(l => NAMES[l.key]||l.name);
+    const zoneBNames = lockConfig.zoneB.map(l => NAMES[l.key]||l.name);
+
+    let layoutHTML = `<div style="margin-top:14px;padding:10px 14px;background:#f7fafc;border-radius:8px;border:1px solid #e2e8f0;">
+        <div style="font-weight:700;font-size:0.8rem;color:#4a5568;margin-bottom:6px;">ผังสายพานบัก:</div>
+        <div style="display:flex;gap:20px;font-size:0.75rem;">
+            <div><span style="font-weight:700;color:#c53030;">Zone A:</span> ${zoneANames.join(' → ')} → Hopper A / Hopper C</div>
+            <div><span style="font-weight:700;color:#975a16;">Zone B:</span> ${zoneBNames.join(' → ')} → Hopper B</div>
+        </div>
+    </div>`;
+
+    return `
+        <div class="rpt-header">
+            <div>
+                <h1>FFB Ramp Report</h1>
+                <div style="font-size:0.8rem;color:#718096;margin-top:2px;">รายงานสถานะแรมป์ปาล์ม</div>
+            </div>
+            <div class="rpt-header-right">
+                <div class="rpt-date">${dateShort}</div>
+                <div>เวลา ${timeStr}</div>
+                <div class="rpt-batch-pills">
+                    <span class="rpt-batch-pill" style="background:#ed8936;">SM ${batchConfig.buying}</span>
+                    <span class="rpt-batch-pill" style="background:#9f7aea;">B ${batchConfig.branch}</span>
+                    <span class="rpt-batch-pill" style="background:#48bb78;">VD ${batchConfig.sub}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="rpt-zones">
+            ${zoneAHTML}
+            ${zoneBHTML}
+        </div>
+
+        ${layoutHTML}
+
+        <div class="rpt-summary-section">
+            <div style="font-weight:700;font-size:0.9rem;color:#2d3748;margin-bottom:8px;">สรุปตามประเภทแหล่งรับ</div>
+            <div class="rpt-summary-grid">
+                <div class="rpt-src-box buying">
+                    <div class="rpt-src-label" style="color:#c05621;">SM - จุดรับซื้อ</div>
+                    <div class="rpt-src-val">${src.buying.w.toFixed(2)} <span style="font-size:0.7rem;font-weight:600;">ตัน</span></div>
+                    <div class="rpt-src-count">${src.buying.n} Batch</div>
+                </div>
+                <div class="rpt-src-box branch">
+                    <div class="rpt-src-label" style="color:#6b46c1;">B - สาขา</div>
+                    <div class="rpt-src-val">${src.branch.w.toFixed(2)} <span style="font-size:0.7rem;font-weight:600;">ตัน</span></div>
+                    <div class="rpt-src-count">${src.branch.n} Batch</div>
+                </div>
+                <div class="rpt-src-box sub">
+                    <div class="rpt-src-label" style="color:#276749;">VD - รายย่อย</div>
+                    <div class="rpt-src-val">${src.sub.w.toFixed(2)} <span style="font-size:0.7rem;font-weight:600;">ตัน</span></div>
+                    <div class="rpt-src-count">${src.sub.n} Batch</div>
+                </div>
+            </div>
+            <div class="rpt-grand">
+                <span>รวมทั้งหมด (${grandN} Batch)</span>
+                <span class="rpt-grand-val">${grandW.toFixed(2)} ตัน</span>
+            </div>
+        </div>
+
+        <div class="rpt-note">
+            <div style="font-weight:700;margin-bottom:4px;">&#128221; หมายเหตุ:</div>
+            <textarea id="rptNote" placeholder="พิมพ์หมายเหตุเพิ่มเติม เช่น ปาล์มในหม้อไลน์เก่า..."></textarea>
+        </div>
+
+        <div class="rpt-footer">
+            <div class="rpt-legend">
+                <div class="rpt-legend-item"><div class="rpt-legend-dot" style="background:#ed8936;"></div>SM จุดรับซื้อ</div>
+                <div class="rpt-legend-item"><div class="rpt-legend-dot" style="background:#9f7aea;"></div>B สาขา</div>
+                <div class="rpt-legend-item"><div class="rpt-legend-dot" style="background:#48bb78;"></div>VD รายย่อย</div>
+            </div>
+            <div>FFB Ramp Simulator &bull; ${dateStr}</div>
+        </div>
+    `;
+}
+
+function captureReport() {
+    const el = document.getElementById('exportReportContent');
+    toast('กำลังบันทึกรูปรายงาน...');
+    html2canvas(el, { scale: 2, useCORS: true, backgroundColor: '#ffffff' }).then(canvas => {
+        const url = canvas.toDataURL('image/png');
+        const a = document.createElement('a');
+        const ts = new Date().toISOString().slice(0,10);
+        a.download = `FFB-Report-${ts}.png`;
+        a.href = url;
+        a.click();
+        toast('ดาวน์โหลดรายงานสำเร็จ');
+    });
+}
+
+function printReport() {
+    const content = document.getElementById('exportReportContent').innerHTML;
+    const win = window.open('', '_blank');
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>FFB Report</title>
+    <style>
+        body { font-family:'Segoe UI',Tahoma,sans-serif; padding:20px; color:#1a202c; }
+        .rpt-header { display:flex; justify-content:space-between; align-items:center; border-bottom:3px solid #1e3a5f; padding-bottom:12px; margin-bottom:16px; }
+        .rpt-header h1 { font-size:1.3rem; color:#1e3a5f; }
+        .rpt-header-right { text-align:right; font-size:0.85rem; color:#4a5568; }
+        .rpt-date { font-weight:700; font-size:1rem; color:#1e3a5f; }
+        .rpt-batch-pills { display:flex; gap:6px; justify-content:flex-end; margin-top:4px; }
+        .rpt-batch-pill { padding:2px 10px; border-radius:4px; font-size:0.75rem; font-weight:700; color:#fff; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+        .rpt-zones { display:flex; gap:16px; margin-bottom:16px; }
+        .rpt-zone { flex:1; }
+        .rpt-zone-title { font-weight:800; font-size:0.9rem; padding:8px 14px; border-radius:8px 8px 0 0; text-align:center; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+        .rpt-zone-a .rpt-zone-title { background:#fed7d7; color:#c53030; }
+        .rpt-zone-b .rpt-zone-title { background:#fefcbf; color:#975a16; }
+        .rpt-table { width:100%; border-collapse:collapse; font-size:0.8rem; }
+        .rpt-table th { background:#2d3748; color:#fff; padding:6px 8px; text-align:left; font-size:0.75rem; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+        .rpt-table td { padding:5px 8px; border-bottom:1px solid #e2e8f0; }
+        .rpt-loc { font-weight:700; }
+        .rpt-w { text-align:right; font-weight:600; }
+        .rpt-batch-tag { display:inline-block; padding:2px 6px; border-radius:4px; margin:1px 2px; font-size:0.72rem; font-weight:600; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+        .rpt-src-buying { background:#fff5eb; color:#c05621; border:1px solid #fbd38d; }
+        .rpt-src-branch { background:#faf5ff; color:#6b46c1; border:1px solid #d6bcfa; }
+        .rpt-src-sub { background:#f0fff4; color:#276749; border:1px solid #9ae6b4; }
+        .rpt-total-row td { font-weight:800; border-top:2px solid #a0aec0; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+        .rpt-zone-a .rpt-total-row td { background:#fed7d7; }
+        .rpt-zone-b .rpt-total-row td { background:#fefcbf; }
+        .rpt-hopper-row td { background:#f0fff4; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+        .rpt-hopper-b td { background:#ebf8ff; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+        .rpt-hopper-c td { background:#faf5ff; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+        .rpt-hidden-row td { opacity:0.4; text-decoration:line-through; }
+        .rpt-summary-grid { display:flex; gap:16px; }
+        .rpt-src-box { flex:1; padding:12px 16px; border-radius:8px; text-align:center; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+        .rpt-src-box.buying { background:#fff5eb; border:2px solid #ed8936; }
+        .rpt-src-box.branch { background:#faf5ff; border:2px solid #9f7aea; }
+        .rpt-src-box.sub { background:#f0fff4; border:2px solid #48bb78; }
+        .rpt-src-label { font-size:0.8rem; font-weight:700; margin-bottom:4px; }
+        .rpt-src-val { font-size:1.3rem; font-weight:800; }
+        .rpt-src-count { font-size:0.7rem; color:#718096; }
+        .rpt-grand { margin-top:12px; padding:14px 20px; background:#1e3a5f; color:#fff; border-radius:8px; display:flex; justify-content:space-between; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+        .rpt-grand-val { font-size:1.4rem; font-weight:900; }
+        .rpt-note { margin-top:12px; padding:10px 14px; background:#fffbeb; border:1px solid #f6e05e; border-radius:6px; font-size:0.8rem; color:#975a16; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+        .rpt-note textarea { display:none; }
+        .rpt-footer { margin-top:16px; padding-top:10px; border-top:2px solid #e2e8f0; display:flex; justify-content:space-between; font-size:0.7rem; color:#a0aec0; }
+        .rpt-legend { display:flex; gap:12px; }
+        .rpt-legend-item { display:flex; align-items:center; gap:4px; }
+        .rpt-legend-dot { width:10px; height:10px; border-radius:3px; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+        @media print { body { margin:0; } }
+    </style></head><body>${content}</body></html>`);
+    win.document.close();
+    // Replace textarea with its value for print
+    const note = document.getElementById('rptNote');
+    if (note && note.value.trim()) {
+        const noteEls = win.document.querySelectorAll('.rpt-note textarea');
+        noteEls.forEach(el => {
+            const p = win.document.createElement('div');
+            p.textContent = note.value;
+            el.parentNode.replaceChild(p, el);
+        });
+    }
+    setTimeout(() => { win.print(); }, 500);
+}
+
+// ========= EXPORT EXCEL =========
+function exportExcel() {
+    const d = new Date(currentDate + 'T00:00:00');
+    const dateShort = d.toLocaleDateString('th-TH', { day:'2-digit', month:'2-digit', year:'numeric' });
+
+    function maxBatches(lockArr, hopperKeys) {
+        let mx = 0;
+        lockArr.forEach(l => { const n = (slots[l.key]||[]).filter(b=>!b.hidden).length; if(n>mx) mx=n; });
+        hopperKeys.forEach(k => { const n = (slots[k]||[]).filter(b=>!b.hidden).length; if(n>mx) mx=n; });
+        return Math.max(mx, 1);
+    }
+
+    const maxAll = Math.max(maxBatches(lockConfig.zoneA, ['hopperA','hopperC']), maxBatches(lockConfig.zoneB, ['hopperB']));
+    const bcols = maxAll * 2;
+    const zoneACols = 2 + bcols;
+    const gapCol = 1;
+    const bOff = zoneACols + gapCol;
+    const totalCols = zoneACols + gapCol + zoneACols;
+
+    function zoneTotals(lockArr, hopperKeys) {
+        let tw = 0, tn = 0, src = { buying:0, branch:0, sub:0 };
+        [...hopperKeys, ...lockArr.map(l=>l.key)].forEach(k => {
+            if (isSlotHidden(k)) return;
+            (slots[k]||[]).forEach(b => {
+                if (b.hidden) return;
+                tw += b.weight; tn++;
+                if (src[b.source] !== undefined) src[b.source] += b.weight;
+            });
+        });
+        return { tw, tn, src };
+    }
+
+    const totA = zoneTotals(lockConfig.zoneA, ['hopperA','hopperC']);
+    const totB = zoneTotals(lockConfig.zoneB, ['hopperB']);
+
+    let grandSrc = { buying:{w:0,n:0}, branch:{w:0,n:0}, sub:{w:0,n:0} };
+    let grandW = 0, grandN = 0;
+    Object.keys(slots).forEach(k => {
+        if (isSlotHidden(k)) return;
+        (slots[k]||[]).forEach(b => {
+            if (b.hidden) return;
+            grandW += b.weight; grandN++;
+            if (grandSrc[b.source]) { grandSrc[b.source].w += b.weight; grandSrc[b.source].n++; }
+        });
+    });
+
+    const htmlTable = buildExcelHTML([], zoneACols, gapCol, bOff, totalCols, maxAll, totA, totB, grandW, grandN, grandSrc, dateShort);
+    const blob = new Blob(['﻿' + htmlTable], { type: 'application/vnd.ms-excel;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.download = `FFB-Report-${currentDate}.xls`;
+    a.href = url;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast('ดาวน์โหลด Excel สำเร็จ');
+}
+
+function buildExcelHTML(data, zoneACols, gapCol, bOff, totalCols, maxAll, totA, totB, grandW, grandN, grandSrc, dateShort) {
+    const SRC_LABEL = { buying:'SM', branch:'B', sub:'VD' };
+    const SRC_BG    = { buying:'#FFF5EB', branch:'#FAF5FF', sub:'#F0FFF4' };
+    const SRC_FG    = { buying:'#C05621', branch:'#6B46C1', sub:'#276749' };
+
+    // Colors
+    const COL_HEADER_BG = '#1E3A5F';
+    const COL_HEADER_FG = '#FFFFFF';
+    const COL_ZONE_A_BG = '#FED7D7';
+    const COL_ZONE_A_FG = '#C53030';
+    const COL_ZONE_B_BG = '#FEFCBF';
+    const COL_ZONE_B_FG = '#975A16';
+    const COL_HOP_A_BG  = '#C6F6D5';
+    const COL_HOP_B_BG  = '#BEE3F8';
+    const COL_HOP_C_BG  = '#E9D8FD';
+    const COL_LOCK_BG   = '#FFFFF0';
+    const COL_TH_BG     = '#2D3748';
+
+    // Build the slot arrays
+    const zoneASlots = ['hopperA', 'hopperC', ...lockConfig.zoneA.map(l=>l.key)];
+    const zoneBSlots = ['hopperB', ...lockConfig.zoneB.map(l=>l.key)];
+    const maxRows = Math.max(zoneASlots.length, zoneBSlots.length);
+
+    function slotBG(key) {
+        if (key === 'hopperA') return COL_HOP_A_BG;
+        if (key === 'hopperB') return COL_HOP_B_BG;
+        if (key === 'hopperC') return COL_HOP_C_BG;
+        return COL_LOCK_BG;
+    }
+
+    function batchBG(src) {
+        return SRC_BG[src] || '#FFFFFF';
+    }
+    function batchFG(src) {
+        return SRC_FG[src] || '#1A202C';
+    }
+
+    let html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+<head><meta charset="utf-8">
+<style>
+    td, th { font-family: 'Segoe UI', Tahoma, sans-serif; font-size: 11pt; vertical-align: middle; }
+    .hdr { background:${COL_HEADER_BG}; color:${COL_HEADER_FG}; font-weight:bold; font-size:14pt; padding:8px; }
+    .zh-a { background:${COL_ZONE_A_BG}; color:${COL_ZONE_A_FG}; font-weight:bold; font-size:12pt; text-align:center; }
+    .zh-b { background:${COL_ZONE_B_BG}; color:${COL_ZONE_B_FG}; font-weight:bold; font-size:12pt; text-align:center; }
+    .th { background:${COL_TH_BG}; color:#fff; font-weight:bold; padding:4px 8px; font-size:10pt; }
+    .loc { font-weight:bold; padding:4px 8px; }
+    .num { text-align:right; font-weight:600; padding:4px 8px; mso-number-format:"\\#\\,\\#\\#0\\.00"; }
+    .batch { padding:4px 6px; font-size:10pt; }
+    .gap { background:#D0D5DD; width:4px; }
+    .tot-a td { background:${COL_ZONE_A_BG}; font-weight:bold; border-top:2px solid #C53030; }
+    .tot-b td { background:${COL_ZONE_B_BG}; font-weight:bold; border-top:2px solid #975A16; }
+    .grand td { background:${COL_HEADER_BG}; color:#fff; font-weight:bold; font-size:12pt; }
+    .src-buy { background:#FFF5EB; color:#C05621; font-weight:bold; }
+    .src-brn { background:#FAF5FF; color:#6B46C1; font-weight:bold; }
+    .src-sub { background:#F0FFF4; color:#276749; font-weight:bold; }
+    .layout { background:#F7FAFC; font-size:10pt; padding:4px 6px; }
+    .note { background:#FFFBEB; color:#975A16; font-style:italic; }
+</style>
+</head><body>
+<table border="1" cellpadding="4" cellspacing="0" style="border-collapse:collapse; border:1px solid #CBD5E0;">`;
+
+    // Batch cols per zone
+    const bcols = maxAll * 2;
+    const zASpan = 2 + bcols;  // loc + sum + batch pairs
+    const zBSpan = 2 + bcols;
+
+    const G = `<td class="gap"></td>`;  // gap column for every row
+
+    // ── Row 0: Main header
+    html += `<tr>
+        <td class="hdr" colspan="${zASpan}">FFB Ramp Report</td>
+        ${G}
+        <td style="background:#E2E8F0;font-weight:bold;" colspan="1">Batch</td>
+        <td style="background:#ED8936;color:#fff;font-weight:bold;" colspan="1">${batchConfig.buying}</td>
+        <td style="background:#9F7AEA;color:#fff;font-weight:bold;" colspan="1">${batchConfig.branch}</td>
+        <td style="background:#48BB78;color:#fff;font-weight:bold;" colspan="1">${batchConfig.sub}</td>
+        <td style="background:#E2E8F0;font-weight:bold;">วันที่</td>
+        <td style="background:#E2E8F0;font-weight:bold;" colspan="${Math.max(zBSpan-5,1)}">${dateShort}</td>
+    </tr>`;
+
+    // ── Row 1: Zone titles
+    html += `<tr>
+        <td class="zh-a" colspan="${zASpan}">ฝั่ง 1,000 ตัน (Zone A)</td>
+        ${G}
+        <td class="zh-b" colspan="${zBSpan}">ฝั่ง Boiler (Zone B)</td>
+    </tr>`;
+
+    // ── Row 2: Column headers
+    html += `<tr>`;
+    html += `<td class="th">Location</td><td class="th" style="text-align:right;">ตัน</td>`;
+    for (let i = 0; i < maxAll; i++) {
+        html += `<td class="th" style="text-align:right;">ตัน</td><td class="th">Batch</td>`;
+    }
+    html += G;
+    html += `<td class="th">Location</td><td class="th" style="text-align:right;">ตัน</td>`;
+    for (let i = 0; i < maxAll; i++) {
+        html += `<td class="th" style="text-align:right;">ตัน</td><td class="th">Batch</td>`;
+    }
+    html += `</tr>`;
+
+    // ── Data rows
+    for (let r = 0; r < maxRows; r++) {
+        html += `<tr>`;
+
+        // Zone A side
+        if (r < zoneASlots.length) {
+            const keyA = zoneASlots[r];
+            const arrA = (slots[keyA]||[]).filter(b=>!b.hidden);
+            const isHA = isSlotHidden(keyA);
+            const totalA = isHA ? 0 : arrA.reduce((s,b)=>s+b.weight,0);
+            const bg = slotBG(keyA);
+            const opac = isHA ? 'opacity:0.4;text-decoration:line-through;' : '';
+            html += `<td class="loc" style="background:${bg};${opac}">${NAMES[keyA]||keyA}</td>`;
+            html += `<td class="num" style="background:${bg};${opac}">${isHA ? '---' : totalA.toFixed(2)}</td>`;
+            for (let i = 0; i < maxAll; i++) {
+                if (!isHA && arrA[i]) {
+                    const b = arrA[i];
+                    html += `<td class="num" style="background:${batchBG(b.source)};">${b.weight.toFixed(2)}</td>`;
+                    html += `<td class="batch" style="background:${batchBG(b.source)};color:${batchFG(b.source)};">${b.code}/${SRC_LABEL[b.source]}/${b.weight.toFixed(0)}</td>`;
+                } else {
+                    html += `<td style="background:${bg};"></td><td style="background:${bg};"></td>`;
+                }
+            }
+        } else {
+            for (let c = 0; c < zASpan; c++) html += `<td></td>`;
+        }
+
+        html += G;  // gap column
+
+        // Zone B side
+        if (r < zoneBSlots.length) {
+            const keyB = zoneBSlots[r];
+            const arrB = (slots[keyB]||[]).filter(b=>!b.hidden);
+            const isHB = isSlotHidden(keyB);
+            const totalB = isHB ? 0 : arrB.reduce((s,b)=>s+b.weight,0);
+            const bg = slotBG(keyB);
+            const opac = isHB ? 'opacity:0.4;text-decoration:line-through;' : '';
+            html += `<td class="loc" style="background:${bg};${opac}">${NAMES[keyB]||keyB}</td>`;
+            html += `<td class="num" style="background:${bg};${opac}">${isHB ? '---' : totalB.toFixed(2)}</td>`;
+            for (let i = 0; i < maxAll; i++) {
+                if (!isHB && arrB[i]) {
+                    const b = arrB[i];
+                    html += `<td class="num" style="background:${batchBG(b.source)};">${b.weight.toFixed(2)}</td>`;
+                    html += `<td class="batch" style="background:${batchBG(b.source)};color:${batchFG(b.source)};">${b.code}/${SRC_LABEL[b.source]}/${b.weight.toFixed(0)}</td>`;
+                } else {
+                    html += `<td style="background:${bg};"></td><td style="background:${bg};"></td>`;
+                }
+            }
+        } else {
+            for (let c = 0; c < zBSpan; c++) html += `<td></td>`;
+        }
+
+        html += `</tr>`;
+    }
+
+    // ── Total rows
+    html += `<tr class="tot-a">`;
+    html += `<td style="background:${COL_ZONE_A_BG};font-weight:bold;">รวมฝั่ง A</td>`;
+    html += `<td class="num" style="background:${COL_ZONE_A_BG};font-weight:bold;">${totA.tw.toFixed(2)}</td>`;
+    html += `<td style="background:${COL_ZONE_A_BG};" colspan="${bcols}">ตัน</td>`;
+    html += G;
+    html += `<td style="background:${COL_ZONE_B_BG};font-weight:bold;">รวมฝั่ง B</td>`;
+    html += `<td class="num" style="background:${COL_ZONE_B_BG};font-weight:bold;">${totB.tw.toFixed(2)}</td>`;
+    html += `<td style="background:${COL_ZONE_B_BG};" colspan="${bcols}">ตัน</td>`;
+    html += `</tr>`;
+
+    const allCols = zASpan + 1 + zBSpan;  // total columns including gap
+
+    // ── Layout row
+    html += `<tr>`;
+    const layoutA = ['Hopper C', ...lockConfig.zoneA.map(l=>NAMES[l.key]||l.name), 'Hopper A'];
+    const layoutB = ['Hopper B', ...lockConfig.zoneB.map(l=>NAMES[l.key]||l.name)];
+    html += `<td class="layout" style="font-weight:bold;">สายพันบัก</td>`;
+    layoutA.forEach(n => { html += `<td class="layout" style="text-align:center;">${n}</td>`; });
+    for (let i = layoutA.length; i < zASpan-1; i++) html += `<td class="layout"></td>`;
+    html += G;
+    html += `<td class="layout" style="font-weight:bold;">สายพันบัก</td>`;
+    layoutB.forEach(n => { html += `<td class="layout" style="text-align:center;">${n}</td>`; });
+    for (let i = layoutB.length; i < zBSpan-1; i++) html += `<td class="layout"></td>`;
+    html += `</tr>`;
+
+    // ── Empty row
+    html += `<tr><td colspan="${allCols}"></td></tr>`;
+
+    // ── Source type summary
+    html += `<tr>`;
+    html += `<td style="font-weight:bold;">ประเภทแหล่งรับ</td>`;
+    html += `<td class="src-buy">SM=จุดรับซื้อ</td>`;
+    html += `<td class="src-buy" style="text-align:right;">${grandSrc.buying.w.toFixed(2)}</td>`;
+    html += `<td class="src-buy">${grandSrc.buying.n} Batch</td>`;
+    html += `<td class="src-brn">B=สาขา</td>`;
+    html += `<td class="src-brn" style="text-align:right;">${grandSrc.branch.w.toFixed(2)}</td>`;
+    html += `<td class="src-brn">${grandSrc.branch.n} Batch</td>`;
+    html += `<td class="src-sub">VD=รายย่อย</td>`;
+    html += `<td class="src-sub" style="text-align:right;">${grandSrc.sub.w.toFixed(2)}</td>`;
+    html += `<td class="src-sub">${grandSrc.sub.n} Batch</td>`;
+    const remCols = allCols - 10;
+    if (remCols > 0) html += `<td colspan="${remCols}"></td>`;
+    html += `</tr>`;
+
+    // ── Grand total
+    html += `<tr class="grand">`;
+    html += `<td style="background:${COL_HEADER_BG};color:#fff;font-weight:bold;" colspan="2">รวมทั้งหมด (${grandN} Batch)</td>`;
+    html += `<td class="num" style="background:${COL_HEADER_BG};color:#FFD700;font-weight:bold;font-size:14pt;">${grandW.toFixed(2)}</td>`;
+    html += `<td style="background:${COL_HEADER_BG};color:#fff;font-weight:bold;">ตัน</td>`;
+    html += `<td colspan="${allCols - 4}" style="background:${COL_HEADER_BG};"></td>`;
+    html += `</tr>`;
+
+    // ── Note row
+    const noteEl = document.getElementById('rptNote');
+    const noteText = (noteEl && noteEl.value.trim()) ? noteEl.value.trim() : '';
+    html += `<tr>`;
+    html += `<td class="note" style="font-weight:bold;">หมายเหตุ</td>`;
+    html += `<td class="note" colspan="${allCols - 1}">${noteText}</td>`;
+    html += `</tr>`;
+
+    html += `</table></body></html>`;
+    return html;
+}
+
+init();
+</script>
+</body>
+</html>
