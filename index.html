@@ -319,6 +319,19 @@
         }
         .capturing .capture-watermark { display: flex; justify-content: space-between; align-items: center; }
 
+        /* Tap-to-move (mobile) */
+        .tap-selected { outline: 3px solid #e53e3e !important; outline-offset: -2px; box-shadow: 0 0 12px rgba(229,62,62,0.4) !important; z-index: 5; position: relative; }
+        .tap-target { outline: 2px dashed #48bb78 !important; outline-offset: -2px; background: rgba(72,187,120,0.06) !important; }
+        .tap-target:active { background: rgba(72,187,120,0.15) !important; }
+        #tapHint {
+            position: fixed; bottom: -60px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.85); color: #fff; padding: 10px 20px; border-radius: 25px;
+            font-size: 0.8rem; z-index: 9999; transition: bottom 0.3s ease;
+            white-space: nowrap; max-width: 90vw; overflow: hidden; text-overflow: ellipsis;
+            pointer-events: none;
+        }
+        #tapHint.show { bottom: 20px; }
+
         /* Force desktop layout during capture (even on mobile) */
         .capture-desktop { width: 1100px !important; min-width: 1100px !important; }
         .capture-desktop .topview { flex-direction: row !important; gap: 0 !important; }
@@ -1134,7 +1147,7 @@ function buildZone(containerId, locks, hopperKey, hopperName, hopperClass, hoppe
                     </button>
                 </div>
             </div>
-            <div class="v-col-header" draggable="true" ondragstart="onLockDS(event,'${l.key}')" ondragend="onLockDE(event,'${l.key}')">
+            <div class="v-col-header" draggable="true" ondragstart="onLockDS(event,'${l.key}')" ondragend="onLockDE(event,'${l.key}')" onclick="tapSelectLock('${l.key}',event)">
                 <div class="col-name">${l.name}</div>
                 <div class="col-badge" id="badge-${l.key}">ว่าง</div>
             </div>
@@ -1443,11 +1456,134 @@ function addBatch(e) {
 
 document.getElementById('addBatchModal').addEventListener('click', function(e){ if(e.target===this) closeAddBatch(); });
 
+// ========= MOBILE TAP-TO-MOVE =========
+const isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0 || window.innerWidth <= 600;
+let tapSelected = null; // { slot, id } or { type:'lock', from }
+
+function tapSelectBatch(slot, id, el, e) {
+    if (!isTouchDevice) return false; // let desktop use normal click→edit
+    e.stopPropagation();
+
+    // If already selected same batch → deselect & open edit
+    if (tapSelected && tapSelected.type === 'batch' && tapSelected.slot === slot && tapSelected.id === id) {
+        clearTapSelection();
+        openEdit(slot, id);
+        return true;
+    }
+
+    // Select this batch
+    clearTapSelection();
+    tapSelected = { type: 'batch', slot, id };
+    el.classList.add('tap-selected');
+    showTapHint('เลือก ' + (slots[slot].find(b=>b.id===id)||{}).code + ' — แตะช่องปลายทางเพื่อย้าย');
+
+    // Highlight valid drop targets
+    document.querySelectorAll('[data-slot]').forEach(s => {
+        if (s.dataset.slot !== slot) s.classList.add('tap-target');
+    });
+    return true;
+}
+
+function tapSelectLock(lockKey, e) {
+    if (!isTouchDevice) return false;
+    if (!slots[lockKey] || !slots[lockKey].length) return false;
+    e.stopPropagation();
+
+    clearTapSelection();
+    tapSelected = { type: 'lock', from: lockKey };
+    const col = document.getElementById('drop-' + lockKey);
+    if (col) col.classList.add('tap-selected');
+    showTapHint('เลือก ' + NAMES[lockKey] + ' ทั้งหมด — แตะ Hopper ปลายทาง');
+
+    document.querySelectorAll('[data-slot]').forEach(s => {
+        if (s.dataset.slot.startsWith('hopper')) s.classList.add('tap-target');
+    });
+    return true;
+}
+
+function tapDropOnSlot(targetSlot) {
+    if (!tapSelected) return;
+
+    if (tapSelected.type === 'lock') {
+        const lockKey = tapSelected.from;
+        if (!targetSlot.startsWith('hopper')) { clearTapSelection(); return; }
+        clearTapSelection();
+        openLockMovePicker(lockKey, targetSlot);
+        return;
+    }
+
+    // Single batch move
+    const { slot: fromSlot, id } = tapSelected;
+    const srcArr = slots[fromSlot];
+    const srcIdx = srcArr.findIndex(b => b.id === id);
+    if (srcIdx === -1) { clearTapSelection(); return; }
+
+    if (targetSlot === fromSlot) {
+        clearTapSelection();
+        return;
+    }
+
+    const fromIsLock = fromSlot.startsWith('L');
+    const toIsHopper = targetSlot.startsWith('hopper');
+
+    if (fromIsLock && toIsHopper) {
+        const batchRef = srcArr[srcIdx];
+        clearTapSelection();
+        openSplitPicker(fromSlot, targetSlot, batchRef.id, slots[targetSlot].length);
+        return;
+    }
+
+    const batch = srcArr.splice(srcIdx, 1)[0];
+    if (!fromIsLock && !toIsHopper) batch.fromLock = null;
+    slots[targetSlot].push(batch);
+    logAction('move', batch.code, fromSlot, targetSlot, batch.weight);
+    clearTapSelection();
+    save(); renderAll();
+    toast(`ย้าย ${batch.code}: ${NAMES[fromSlot]} → ${NAMES[targetSlot]}`);
+}
+
+function clearTapSelection() {
+    tapSelected = null;
+    document.querySelectorAll('.tap-selected').forEach(e => e.classList.remove('tap-selected'));
+    document.querySelectorAll('.tap-target').forEach(e => e.classList.remove('tap-target'));
+    hideTapHint();
+}
+
+function showTapHint(msg) {
+    let hint = document.getElementById('tapHint');
+    if (!hint) {
+        hint = document.createElement('div');
+        hint.id = 'tapHint';
+        document.body.appendChild(hint);
+    }
+    hint.textContent = msg;
+    hint.classList.add('show');
+}
+function hideTapHint() {
+    const hint = document.getElementById('tapHint');
+    if (hint) hint.classList.remove('show');
+}
+
+// Close tap selection when tapping empty area
+document.addEventListener('click', e => {
+    if (!tapSelected) return;
+    if (e.target.closest('.batch-card') || e.target.closest('[data-slot]') || e.target.closest('.v-col-header')) return;
+    clearTapSelection();
+});
+
 // ========= DRAG & DROP (between slots + reorder within) =========
 let dragData = null;
 
 function setupDrop() {
     document.querySelectorAll('[data-slot]').forEach(el => {
+        // Mobile: tap on slot to drop selected batch here
+        el.addEventListener('click', e => {
+            if (!tapSelected) return;
+            if (e.target.closest('.batch-card')) return; // batch card handles its own tap
+            if (e.target.closest('.slot-gear-wrap')) return;
+            tapDropOnSlot(el.dataset.slot);
+        });
+
         el.addEventListener('dragover', e => {
             e.preventDefault();
             e.dataTransfer.dropEffect = 'move';
@@ -1717,7 +1853,7 @@ function cardHTML(b, slot) {
     const hiddenCls = b.hidden ? ' batch-hidden' : '';
     return `<div class="batch-card src-${b.source}${hiddenCls}" draggable="true"
         ondragstart="onDS(event,'${slot}','${b.id}')" ondragend="onDE(event)"
-        onclick="openEdit('${slot}','${b.id}')"
+        onclick="if(tapSelectBatch('${slot}','${b.id}',this,event)) return; openEdit('${slot}','${b.id}')"
         title="คลิกเพื่อแก้ไข | ${b.code} | ${b.weight}T | ${SRC[b.source]}${b.fromLock?' | จาก '+NAMES[b.fromLock]:''}${b.hidden?' | ซ่อน':''}">
         <div class="b-code">${b.code}</div>
         <div class="b-weight">${b.weight} ตัน</div>
