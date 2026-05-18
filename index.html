@@ -319,6 +319,22 @@
         }
         .capturing .capture-watermark { display: flex; justify-content: space-between; align-items: center; }
 
+        /* Force desktop layout during capture (even on mobile) */
+        .capture-desktop { width: 1100px !important; min-width: 1100px !important; }
+        .capture-desktop .topview { flex-direction: row !important; gap: 0 !important; }
+        .capture-desktop .ramp-divider { width: 8px !important; height: auto !important; margin: 0 !important; min-height: 200px !important; }
+        .capture-desktop .ramp-divider::after { transform: translate(-50%,-50%) rotate(0deg) !important; }
+        .capture-desktop .zone-a, .capture-desktop .zone-b { padding: 0 !important; flex: 1 !important; }
+        .capture-desktop .columns-row { overflow-x: visible !important; flex-wrap: nowrap !important; gap: 6px !important; }
+        .capture-desktop .v-col { min-width: 100px !important; flex: 1 !important; }
+        .capture-desktop .zone-labels { flex-direction: row !important; }
+        .capture-desktop .zlabel { flex: 1 !important; font-size: 0.8rem !important; }
+        .capture-desktop .batch-card .b-code { font-size: 0.82rem !important; }
+        .capture-desktop .batch-card .b-weight { font-size: 0.72rem !important; }
+        .capture-desktop .batch-card .b-source { font-size: 0.65rem !important; }
+        .capture-desktop .slot-gear-wrap { display: none !important; }
+        .capture-desktop .hopper-col { min-width: 120px !important; }
+
         /* Preview overlay */
         .preview-overlay {
             display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7);
@@ -517,6 +533,11 @@
 
             /* Touch-friendly: disable drag preview flicker */
             .batch-card { -webkit-touch-callout: none; }
+
+            /* Show New Batch button near top on mobile */
+            .mobile-new-batch { display: block !important; }
+            /* Hide original New Batch in right-panel on mobile */
+            .right-panel > .btn[onclick*="openAddBatch"] { display: none !important; }
         }
         /* ===== EXPORT REPORT MODAL ===== */
         .export-overlay {
@@ -656,6 +677,9 @@
             <button class="btn" onclick="openExportReport()" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;">&#128202; Export รายงาน</button>
             <button class="btn" onclick="exportExcel()" style="background:linear-gradient(135deg,#38a169,#2f855a);color:#fff;">&#128196; Excel</button>
         </div>
+
+        <!-- Mobile: New Batch button near top -->
+        <button class="btn mobile-new-batch" onclick="openAddBatch()" style="display:none;background:#48bb78;color:#fff;font-weight:700;font-size:0.9rem;width:100%;padding:12px;border-radius:10px;margin-bottom:6px;">&#43; New Batch</button>
 
         <div id="captureArea">
         <div class="ramp-container">
@@ -2149,18 +2173,23 @@ function captureRamp() {
         now.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
 
     area.classList.add('capturing');
+    // Force desktop layout for capture (even on mobile)
+    area.classList.add('capture-desktop');
     toast('กำลังบันทึกรูป...');
 
-    html2canvas(area, { scale: 2, useCORS: true, backgroundColor: '#dce3ec' }).then(canvas => {
-        area.classList.remove('capturing');
-        capturedDataUrl = canvas.toDataURL('image/png');
-        canvas.toBlob(blob => { capturedBlob = blob; });
-        document.getElementById('previewImg').src = capturedDataUrl;
-        document.getElementById('previewOverlay').classList.add('active');
-    }).catch(() => {
-        area.classList.remove('capturing');
-        toast('เกิดข้อผิดพลาด ลองใหม่อีกครั้ง');
-    });
+    // Small delay to let CSS apply before capture
+    setTimeout(() => {
+        html2canvas(area, { scale: 2, useCORS: true, backgroundColor: '#dce3ec', width: area.scrollWidth, height: area.scrollHeight }).then(canvas => {
+            area.classList.remove('capturing', 'capture-desktop');
+            capturedDataUrl = canvas.toDataURL('image/png');
+            canvas.toBlob(blob => { capturedBlob = blob; });
+            document.getElementById('previewImg').src = capturedDataUrl;
+            document.getElementById('previewOverlay').classList.add('active');
+        }).catch(() => {
+            area.classList.remove('capturing', 'capture-desktop');
+            toast('เกิดข้อผิดพลาด ลองใหม่อีกครั้ง');
+        });
+    }, 100);
 }
 
 function downloadImage() {
