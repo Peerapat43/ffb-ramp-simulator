@@ -552,6 +552,69 @@
             /* Hide original New Batch in right-panel on mobile */
             .right-panel > .btn[onclick*="openAddBatch"] { display: none !important; }
         }
+
+        /* ===== MOBILE LANDSCAPE (แนวนอน) ===== */
+        @media (max-height: 500px) and (orientation: landscape) {
+            /* Header: single compact row */
+            .header { flex-direction: row; padding: 6px 12px; gap: 8px; }
+            .header h1 { font-size: 0.85rem; }
+            .header .sub { display: none; }
+            .header-right { gap: 4px; }
+            .hdr-pill { font-size: 0.65rem; padding: 4px 7px; }
+            .hdr-nav-btn { width: 28px; height: 28px; font-size: 0.75rem; min-width: 28px; }
+
+            /* Main: side-by-side, compact */
+            .main { padding: 4px; gap: 6px; flex-direction: row !important; }
+            .left-panel { flex: 2; }
+            .right-panel { flex: 1; flex-direction: column; width: auto; max-height: calc(100vh - 60px); overflow-y: auto; }
+
+            /* Capture bar: compact */
+            .capture-bar { gap: 4px; }
+            .capture-bar .btn { padding: 5px 8px; font-size: 0.65rem; }
+            .capture-bar .section-title { font-size: 0.78rem; }
+
+            /* Ramp: horizontal layout (not stacked) */
+            .topview { flex-direction: row !important; gap: 0 !important; }
+            .ramp-divider { width: 6px !important; height: auto !important; min-height: 120px; }
+            .zone-labels { flex-direction: row; }
+            .zlabel { font-size: 0.65rem; padding: 3px 8px; }
+
+            /* Columns: compact */
+            .columns-row { min-height: 140px; gap: 3px; }
+            .v-col { min-width: 70px; min-height: 120px; }
+            .v-col-header .col-name { font-size: 0.7rem; }
+            .v-col-header .col-badge { font-size: 0.55rem; }
+
+            /* Batch cards: smaller */
+            .batch-card { padding: 4px 5px; margin-bottom: 2px; }
+            .batch-card .b-code { font-size: 0.68rem; }
+            .batch-card .b-weight { font-size: 0.58rem; }
+            .batch-card .b-source { font-size: 0.52rem; }
+            .batch-card .b-from { font-size: 0.5rem; }
+
+            /* Hopper */
+            .hopper-top { padding: 4px; }
+            .hopper-col { min-width: 80px; }
+
+            /* Zone totals */
+            .zone-total-bar { font-size: 0.62rem; padding: 3px 6px; }
+            .v-col-footer { font-size: 0.58rem; }
+
+            /* Buttons */
+            .btn { padding: 6px 10px; font-size: 0.7rem; }
+            .mobile-new-batch { display: block !important; padding: 8px !important; font-size: 0.78rem !important; }
+
+            /* Cards/sections */
+            .card { padding: 8px; margin-bottom: 6px; }
+            .section-title { font-size: 0.78rem; }
+
+            /* Gear: smaller */
+            .slot-gear-btn { width: 22px; height: 22px; font-size: 0.65rem; }
+
+            /* Ramp container */
+            .ramp-container { padding: 4px; }
+        }
+
         /* ===== EXPORT REPORT MODAL ===== */
         .export-overlay {
             display: none; position: fixed; inset: 0; z-index: 9999;
