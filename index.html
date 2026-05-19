@@ -333,21 +333,30 @@
         }
         #tapHint.show { bottom: 20px; }
 
+        /* Capture-only zone titles (hidden normally, shown during capture) */
+        .capture-zone-title { display: none; text-align: center; font-weight: 800; font-size: 0.9rem; padding: 6px 0; border-radius: 8px; margin-bottom: 4px; }
+        .capture-zone-a { background: #fed7d7; color: #c53030; }
+        .capture-zone-b { background: #fefcbf; color: #975a16; }
+
         /* Force desktop layout during capture (even on mobile) */
         .capture-desktop { width: 1100px !important; min-width: 1100px !important; }
         .capture-desktop .topview { flex-direction: row !important; gap: 0 !important; }
-        .capture-desktop .ramp-divider { display: flex !important; width: 8px !important; height: auto !important; margin: 0 !important; min-height: 200px !important; }
-        .capture-desktop .ramp-divider::after { transform: translate(-50%,-50%) rotate(0deg) !important; }
+        .capture-desktop .ramp-divider { display: flex !important; width: 10px !important; height: auto !important; margin: 0 !important; min-height: 200px !important; background: #546e7a !important; }
+        .capture-desktop .ramp-divider::after { display: none !important; }
         .capture-desktop .zone-a, .capture-desktop .zone-b { padding: 0 !important; flex: 1 !important; display: flex !important; flex-direction: column !important; }
         .capture-desktop .zone-a.zone-hidden-mobile, .capture-desktop .zone-b.zone-hidden-mobile { display: flex !important; }
         .capture-desktop .zone-labels { display: none !important; }
-        .capture-desktop .columns-row { overflow-x: visible !important; flex-wrap: nowrap !important; gap: 6px !important; }
-        .capture-desktop .v-col { min-width: 100px !important; flex: 1 !important; }
-        .capture-desktop .batch-card .b-code { font-size: 0.82rem !important; }
-        .capture-desktop .batch-card .b-weight { font-size: 0.72rem !important; }
-        .capture-desktop .batch-card .b-source { font-size: 0.65rem !important; }
+        .capture-desktop .capture-zone-title { display: block !important; }
+        .capture-desktop .columns-row { overflow-x: visible !important; flex-wrap: nowrap !important; gap: 4px !important; }
+        .capture-desktop .v-col { min-width: 90px !important; flex: 1 !important; overflow: hidden !important; }
+        .capture-desktop .v-col .hopper-vlabel { display: none !important; }
+        .capture-desktop .batch-card { overflow: hidden !important; }
+        .capture-desktop .batch-card .b-code { font-size: 0.75rem !important; overflow: hidden !important; text-overflow: ellipsis !important; white-space: nowrap !important; }
+        .capture-desktop .batch-card .b-weight { font-size: 0.65rem !important; }
+        .capture-desktop .batch-card .b-source { font-size: 0.6rem !important; }
+        .capture-desktop .batch-card .b-from { font-size: 0.55rem !important; }
         .capture-desktop .slot-gear-wrap { display: none !important; }
-        .capture-desktop .hopper-col { min-width: 120px !important; }
+        .capture-desktop .hopper-col { min-width: 110px !important; }
 
         /* Preview overlay */
         .preview-overlay {
@@ -807,6 +816,7 @@
             <div class="topview">
                 <!-- ===== ZONE A ===== -->
                 <div class="zone zone-a">
+                    <div class="capture-zone-title capture-zone-a">ฝั่ง 1,000 ตัน (Zone A)</div>
                     <!-- Hopper C (horizontal top) -->
                     <div class="hopper-top hopper-c-bg" id="drop-hopperC" data-slot="hopperC" style="position:relative;">
                         <div class="slot-gear-wrap" id="gear-hopperC">
@@ -837,6 +847,7 @@
 
                 <!-- ===== ZONE B ===== -->
                 <div class="zone zone-b">
+                    <div class="capture-zone-title capture-zone-b">ฝั่ง Boiler (Zone B)</div>
                     <div style="min-height:60px;"></div>
 
                     <div class="flow-label">&#x2195; ลาก Batch</div>
