@@ -2454,8 +2454,10 @@ function onSourceChange() {
     if (!src) { codeInput.placeholder = 'เลือกแหล่งที่มาก่อน'; return; }
 
     const prefix = src === 'buying' ? batchConfig.buying : src === 'branch' ? batchConfig.branch : batchConfig.sub;
-    codeInput.value = prefix + '/';
-    codeInput.placeholder = prefix + '/VD/30';
+    const srcAbbr = src === 'buying' ? 'SM' : src === 'branch' ? 'B' : 'VD';
+    const today = new Date().getDate();
+    codeInput.value = prefix + '/' + srcAbbr + '/';
+    codeInput.placeholder = prefix + '/' + srcAbbr + '/' + today;
     codeInput.focus();
     codeInput.setSelectionRange(codeInput.value.length, codeInput.value.length);
 }
