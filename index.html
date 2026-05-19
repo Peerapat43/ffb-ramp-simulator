@@ -41,8 +41,8 @@
             background: #dce3ec; border-radius: 14px; padding: 16px;
             border: 2px solid #b0bec5;
         }
-        .zone-labels { display: flex; justify-content: space-between; margin-bottom: 10px; }
-        .zlabel { font-weight: 700; font-size: 0.85rem; padding: 4px 14px; border-radius: 6px; }
+        .zone-labels { display: flex; justify-content: space-between; margin-bottom: 10px; gap: 0; }
+        .zlabel { font-weight: 700; font-size: 0.85rem; padding: 4px 14px; border-radius: 6px; border: none; cursor: pointer; transition: all 0.2s; }
         .zlabel-a { background: #fed7d7; color: #c53030; }
         .zlabel-b { background: #fefcbf; color: #975a16; }
 
@@ -458,14 +458,19 @@
 
             /* Ramp container */
             .ramp-container { padding: 6px; }
-            .zone-labels { flex-direction: row; gap: 6px; align-items: center; justify-content: center; }
-            .zlabel { font-size: 0.72rem; padding: 5px 12px; flex: 1; text-align: center; }
+            /* Zone tabs: toggle between A and B */
+            .zone-labels { flex-direction: row; gap: 0; align-items: stretch; justify-content: center; border-radius: 10px; overflow: hidden; border: 2px solid #e2e8f0; }
+            .zlabel { font-size: 0.82rem; padding: 10px 12px; flex: 1; text-align: center; border-radius: 0; opacity: 0.5; font-weight: 700; }
+            .zlabel.active { opacity: 1; transform: scale(1); box-shadow: 0 2px 8px rgba(0,0,0,0.15); position: relative; z-index: 1; }
+            .zlabel-a.active { background: #fc8181; color: #fff; }
+            .zlabel-b.active { background: #ecc94b; color: #744210; }
 
-            /* Topview: stack zones vertically on small screens */
-            .topview { flex-direction: column; gap: 8px; }
-            .ramp-divider { width: 100%; height: 6px; margin: 2px 0; }
-            .ramp-divider::after { transform: translate(-50%,-50%) rotate(0deg); }
+            /* Topview: show one zone at a time */
+            .topview { flex-direction: column; gap: 0; }
+            .ramp-divider { display: none; }
             .zone-a, .zone-b { padding: 0; }
+            .zone-b.zone-hidden-mobile { display: none !important; }
+            .zone-a.zone-hidden-mobile { display: none !important; }
 
             /* Columns row: horizontal scroll with snap */
             .columns-row { min-height: 200px; gap: 3px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; }
@@ -573,22 +578,10 @@
             .right-panel > .btn[onclick*="openAddBatch"] { display: none !important; }
         }
 
-        /* ===== LANDSCAPE ROTATE HINT ===== */
-        .rotate-hint {
-            display: none; position: fixed; top: 0; left: 0; right: 0;
-            background: linear-gradient(135deg, #1e3a5f, #2d5a87); color: #fff;
-            text-align: center; padding: 8px 16px; font-size: 0.78rem; z-index: 9998;
-            cursor: pointer;
-        }
-        .rotate-hint span { margin-right: 6px; }
-        @media (max-height: 500px) and (orientation: landscape) {
-            .rotate-hint { display: block; }
-        }
-
         /* ===== MOBILE LANDSCAPE (แนวนอน มือถือ) ===== */
         @media (max-height: 500px) and (orientation: landscape) {
             /* Header: single compact row */
-            .header { flex-direction: row; padding: 5px 10px; gap: 6px; align-items: center; margin-top: 34px; }
+            .header { flex-direction: row; padding: 5px 10px; gap: 6px; align-items: center; }
             .header h1 { font-size: 0.8rem; white-space: nowrap; }
             .header .sub { display: none; }
             .header-right { gap: 3px; flex-wrap: nowrap; }
@@ -610,13 +603,17 @@
             .capture-bar .btn { padding: 4px 8px; font-size: 0.62rem; white-space: nowrap; }
             .capture-bar .section-title { font-size: 0.72rem; white-space: nowrap; }
 
-            /* Ramp: HORIZONTAL like desktop */
-            .topview { flex-direction: row !important; gap: 0 !important; }
-            .ramp-divider { width: 5px !important; height: auto !important; min-height: 100px; margin: 0 !important; }
-            .ramp-divider::after { transform: translate(-50%,-50%) rotate(0deg) !important; }
-            .zone-a, .zone-b { flex: 1 !important; padding: 0 !important; }
-            .zone-labels { flex-direction: row; gap: 4px; }
-            .zlabel { font-size: 0.6rem; padding: 3px 8px; flex: 1; text-align: center; }
+            /* Ramp: use tab switching same as portrait */
+            .topview { flex-direction: column !important; gap: 0 !important; }
+            .ramp-divider { display: none !important; }
+            .zone-a, .zone-b { padding: 0 !important; }
+            .zone-b.zone-hidden-mobile { display: none !important; }
+            .zone-a.zone-hidden-mobile { display: none !important; }
+            .zone-labels { flex-direction: row; gap: 0; border-radius: 8px; overflow: hidden; border: 2px solid #e2e8f0; }
+            .zlabel { font-size: 0.7rem; padding: 7px 8px; flex: 1; text-align: center; opacity: 0.5; }
+            .zlabel.active { opacity: 1; box-shadow: 0 2px 8px rgba(0,0,0,0.15); z-index: 1; }
+            .zlabel-a.active { background: #fc8181; color: #fff; }
+            .zlabel-b.active { background: #ecc94b; color: #744210; }
 
             /* Columns: compact, scrollable */
             .columns-row { min-height: 110px; gap: 2px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
@@ -770,9 +767,6 @@
 </head>
 <body>
 
-<div class="rotate-hint" onclick="this.style.display='none'">
-    <span>📱</span> แนะนำให้หมุนจอเป็นแนวตั้งเพื่อใช้งานได้ดีขึ้น &nbsp; ✕
-</div>
 <div class="header">
     <div>
         <h1>FFB Ramp Simulator</h1>
@@ -805,8 +799,8 @@
         <div id="captureArea">
         <div class="ramp-container">
             <div class="zone-labels">
-                <span class="zlabel zlabel-a">ฝั่ง 1,000 ตัน (Zone A)</span>
-                <span class="zlabel zlabel-b">ฝั่ง Boiler (Zone B)</span>
+                <button class="zlabel zlabel-a active" id="tabZoneA" onclick="switchZoneTab('A')">ฝั่ง 1,000 ตัน (Zone A)</button>
+                <button class="zlabel zlabel-b" id="tabZoneB" onclick="switchZoneTab('B')">ฝั่ง Boiler (Zone B)</button>
             </div>
 
             <div class="topview">
@@ -1316,6 +1310,58 @@ function updateLocationDropdowns() {
 // ========= LOCK CONFIG MODAL =========
 let lockCfgTemp = { zoneA: [], zoneB: [] };
 let lockNextId = 100;
+
+// ========= ZONE TAB SWITCHING (mobile) =========
+let activeZoneTab = 'A';
+
+function switchZoneTab(zone) {
+    activeZoneTab = zone;
+    const tabA = document.getElementById('tabZoneA');
+    const tabB = document.getElementById('tabZoneB');
+    const zoneA = document.querySelector('.zone-a');
+    const zoneB = document.querySelector('.zone-b');
+
+    if (!tabA || !tabB || !zoneA || !zoneB) return;
+
+    // Only apply tab switching on small screens (mobile portrait + landscape)
+    const isMobile = window.innerWidth <= 600 || (window.innerHeight <= 500 && window.innerWidth <= 900);
+    if (!isMobile) return;
+
+    if (zone === 'A') {
+        tabA.classList.add('active');
+        tabB.classList.remove('active');
+        zoneA.classList.remove('zone-hidden-mobile');
+        zoneB.classList.add('zone-hidden-mobile');
+    } else {
+        tabB.classList.add('active');
+        tabA.classList.remove('active');
+        zoneB.classList.remove('zone-hidden-mobile');
+        zoneA.classList.add('zone-hidden-mobile');
+    }
+}
+
+// On resize, show both zones on desktop
+window.addEventListener('resize', () => {
+    const zoneA = document.querySelector('.zone-a');
+    const zoneB = document.querySelector('.zone-b');
+    if (!zoneA || !zoneB) return;
+
+    const isMobile = window.innerWidth <= 600 || (window.innerHeight <= 500 && window.innerWidth <= 900);
+    if (!isMobile) {
+        zoneA.classList.remove('zone-hidden-mobile');
+        zoneB.classList.remove('zone-hidden-mobile');
+    } else {
+        switchZoneTab(activeZoneTab);
+    }
+});
+
+// Initialize: hide zone B on mobile on load
+document.addEventListener('DOMContentLoaded', () => {
+    const isMobile = window.innerWidth <= 600 || (window.innerHeight <= 500 && window.innerWidth <= 900);
+    if (isMobile) {
+        switchZoneTab('A');
+    }
+});
 
 // Lock body scroll when modal is open (prevents iOS scroll-through)
 function lockBodyScroll() {
