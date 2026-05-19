@@ -335,13 +335,13 @@
         /* Force desktop layout during capture (even on mobile) */
         .capture-desktop { width: 1100px !important; min-width: 1100px !important; }
         .capture-desktop .topview { flex-direction: row !important; gap: 0 !important; }
-        .capture-desktop .ramp-divider { width: 8px !important; height: auto !important; margin: 0 !important; min-height: 200px !important; }
+        .capture-desktop .ramp-divider { display: flex !important; width: 8px !important; height: auto !important; margin: 0 !important; min-height: 200px !important; }
         .capture-desktop .ramp-divider::after { transform: translate(-50%,-50%) rotate(0deg) !important; }
-        .capture-desktop .zone-a, .capture-desktop .zone-b { padding: 0 !important; flex: 1 !important; }
+        .capture-desktop .zone-a, .capture-desktop .zone-b { padding: 0 !important; flex: 1 !important; display: flex !important; flex-direction: column !important; }
+        .capture-desktop .zone-a.zone-hidden-mobile, .capture-desktop .zone-b.zone-hidden-mobile { display: flex !important; }
+        .capture-desktop .zone-labels { display: none !important; }
         .capture-desktop .columns-row { overflow-x: visible !important; flex-wrap: nowrap !important; gap: 6px !important; }
         .capture-desktop .v-col { min-width: 100px !important; flex: 1 !important; }
-        .capture-desktop .zone-labels { flex-direction: row !important; }
-        .capture-desktop .zlabel { flex: 1 !important; font-size: 0.8rem !important; }
         .capture-desktop .batch-card .b-code { font-size: 0.82rem !important; }
         .capture-desktop .batch-card .b-weight { font-size: 0.72rem !important; }
         .capture-desktop .batch-card .b-source { font-size: 0.65rem !important; }
