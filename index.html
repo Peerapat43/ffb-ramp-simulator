@@ -74,7 +74,7 @@
         .hopper-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
         .hopper-name { font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; }
         .hopper-badge { font-size: 0.6rem; padding: 2px 7px; border-radius: 4px; font-weight: 700; background: #f6ad55; color: #fff; }
-        .hopper-batches { display: flex; flex-wrap: wrap; gap: 4px; flex: 1; min-height: 24px; }
+        .hopper-batches { display: flex; flex-wrap: wrap; gap: 4px; flex: 1; min-height: 24px; overflow: hidden; min-width: 0; }
         .hopper-total { font-size: 0.7rem; color: #4a5568; font-weight: 600; text-align: right; margin-top: 4px; }
 
         /* VERTICAL COLUMNS ROW: locks + hopper side by side */
@@ -87,6 +87,7 @@
             flex: 1; display: flex; flex-direction: column;
             border-radius: 10px; min-height: 280px;
             transition: all 0.2s; position: relative;
+            min-width: 0; overflow: hidden;
         }
         .v-col.drag-over { box-shadow: 0 0 0 3px #4299e1, 0 0 16px rgba(66,153,225,0.3); }
 
@@ -149,7 +150,7 @@
 
         .v-col-body {
             flex: 1; padding: 6px; display: flex; flex-direction: column; gap: 4px;
-            overflow-y: auto;
+            overflow-y: auto; overflow-x: hidden; min-width: 0;
         }
         .v-col-footer { padding: 4px 6px; font-size: 0.68rem; color: #718096; font-weight: 600; text-align: center; border-top: 1px solid rgba(0,0,0,0.08); }
 
@@ -159,7 +160,7 @@
         .batch-card {
             background: #fff; border: 1.5px solid #e2e8f0; border-radius: 8px;
             padding: 6px 8px; cursor: grab; transition: all 0.15s;
-            user-select: none;
+            user-select: none; overflow: hidden; box-sizing: border-box; width: 100%;
         }
         .batch-card:hover { border-color: #90cdf4; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
         .batch-card.dragging { opacity: 0.3; transform: scale(0.95); }
@@ -172,10 +173,10 @@
             animation: pulse-line 0.8s ease-in-out infinite alternate;
         }
         @keyframes pulse-line { from { opacity: 0.6; } to { opacity: 1; } }
-        .batch-card .b-code { font-weight: 700; font-size: 0.78rem; color: #2b6cb0; }
-        .batch-card .b-weight { font-size: 0.68rem; color: #718096; }
-        .batch-card .b-source { font-size: 0.6rem; color: #a0aec0; }
-        .batch-card .b-from { font-size: 0.58rem; color: #e53e3e; font-weight: 600; margin-top: 2px; }
+        .batch-card .b-code { font-weight: 700; font-size: 0.78rem; color: #2b6cb0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .batch-card .b-weight { font-size: 0.68rem; color: #718096; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .batch-card .b-source { font-size: 0.6rem; color: #a0aec0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .batch-card .b-from { font-size: 0.58rem; color: #e53e3e; font-weight: 600; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .batch-card.src-buying { border-left: 4px solid #ed8936; }
         .batch-card.src-branch { border-left: 4px solid #9f7aea; }
         .batch-card.src-sub { border-left: 4px solid #48bb78; }
