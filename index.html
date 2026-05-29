@@ -484,11 +484,17 @@
         .lcfg-layout-btn.active { background: #fff; color: #0f766e; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         .lcfg-add-btn { width: 100%; margin-top: 8px; background: none; border: 1.5px dashed #cbd5e0; color: #718096; font-size: 0.78rem; padding: 8px; border-radius: 8px; cursor: pointer; transition: all 0.15s; font-weight: 600; }
         .lcfg-add-btn:hover { border-color: #4299e1; color: #0e7490; background: #ebf8ff; }
-        /* Lock color picker */
-        .lcfg-colors { display: flex; gap: 3px; flex-shrink: 0; align-items: center; }
-        .lcfg-cdot { width: 18px; height: 18px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: all 0.15s; flex-shrink: 0; }
-        .lcfg-cdot:hover { transform: scale(1.2); }
-        .lcfg-cdot.active { border-color: #1a202c; box-shadow: 0 0 0 2px #fff, 0 0 0 3px #1a202c; }
+        /* Lock color dropdown */
+        .lcfg-color-sel { position: relative; flex-shrink: 0; }
+        .lcfg-color-btn { width: 28px; height: 28px; border-radius: 6px; border: 2px solid #e2e8f0; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; justify-content: center; }
+        .lcfg-color-btn:hover { border-color: #94a3b8; }
+        .lcfg-color-btn .cdot-preview { width: 16px; height: 16px; border-radius: 50%; }
+        .lcfg-color-dd { display: none; position: absolute; top: 32px; right: 0; background: #fff; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); z-index: 50; }
+        .lcfg-color-dd.open { display: block; }
+        .lcfg-color-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+        .lcfg-cdot { width: 28px; height: 28px; border-radius: 50%; cursor: pointer; border: 2.5px solid transparent; transition: all 0.15s; }
+        .lcfg-cdot:hover { transform: scale(1.15); }
+        .lcfg-cdot.active { border-color: #1a202c; box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px #1a202c; }
 
         @media (max-width: 1200px) {
             .main { flex-direction: column; }
@@ -1558,6 +1564,7 @@ function renderLockCfgRows() {
         const container = document.getElementById(`lockCfgZone${zone}`);
         container.innerHTML = arr.map((l, i) => {
             const curColor = l.color || 'slate';
+            const cur = LOCK_COLORS.find(c => c.id === curColor) || LOCK_COLORS[0];
             const colorDots = LOCK_COLORS.map(c =>
                 `<div class="lcfg-cdot${c.id===curColor?' active':''}" style="background:${c.dot}" onclick="setLockColor('${zone}',${i},'${c.id}')" title="${c.id}"></div>`
             ).join('');
@@ -1568,12 +1575,32 @@ function renderLockCfgRows() {
                     <button onclick="moveLockRow('${zone}',${i},1)" ${i===arr.length-1?'disabled':''} title="ลง">&#9660;</button>
                 </div>
                 <input type="text" value="${l.name}" data-zone="${zone}" data-idx="${i}" onchange="onLockNameChange(this)" placeholder="ชื่อ Lock">
-                <div class="lcfg-colors">${colorDots}</div>
+                <div class="lcfg-color-sel">
+                    <button class="lcfg-color-btn" onclick="toggleColorDD(this,event)" title="เลือกสี">
+                        <div class="cdot-preview" style="background:${cur.dot}"></div>
+                    </button>
+                    <div class="lcfg-color-dd">
+                        <div class="lcfg-color-grid">${colorDots}</div>
+                    </div>
+                </div>
                 <button class="lcfg-del" onclick="removeLockRow('${zone}',${i})" title="ลบ Lock">&#10005;</button>
             </div>`;
         }).join('') || '<div style="color:#cbd5e0;font-size:0.75rem;text-align:center;padding:8px;">ไม่มี Lock</div>';
     });
 }
+
+function toggleColorDD(btn, e) {
+    e.stopPropagation();
+    const dd = btn.nextElementSibling;
+    // Close all other dropdowns first
+    document.querySelectorAll('.lcfg-color-dd.open').forEach(d => { if (d !== dd) d.classList.remove('open'); });
+    dd.classList.toggle('open');
+}
+
+// Close color dropdown when clicking outside
+document.addEventListener('click', () => {
+    document.querySelectorAll('.lcfg-color-dd.open').forEach(d => d.classList.remove('open'));
+});
 
 function setLockColor(zone, idx, colorId) {
     // Save current input names first
@@ -1584,6 +1611,8 @@ function setLockColor(zone, idx, colorId) {
     });
     const arr = zone === 'A' ? lockCfgTemp.zoneA : lockCfgTemp.zoneB;
     arr[idx].color = colorId;
+    // Close dropdown
+    document.querySelectorAll('.lcfg-color-dd.open').forEach(d => d.classList.remove('open'));
     renderLockCfgRows();
 }
 
