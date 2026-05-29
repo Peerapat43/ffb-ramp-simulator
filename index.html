@@ -3765,13 +3765,19 @@ function showTourStep() {
         tourTooltip.style.left = tipLeft + 'px';
         tourTooltip.style.width = tipW + 'px';
 
-        if (step.pos === 'bottom') {
-            const topPos = rect.bottom + pad + 14;
+        // If element is taller than 60% of viewport, center tooltip on screen
+        const vh = window.innerHeight;
+        if (rect.height > vh * 0.5) {
+            tourTooltip.style.top = (vh / 2 - 80) + 'px';
+            tourTooltip.style.bottom = 'auto';
+        } else if (step.pos === 'bottom') {
+            const topPos = Math.min(rect.bottom + pad + 14, vh - 180);
             tourTooltip.style.top = topPos + 'px';
             tourTooltip.style.bottom = 'auto';
         } else {
+            const bottomPos = vh - rect.top + pad + 14;
             tourTooltip.style.top = 'auto';
-            tourTooltip.style.bottom = (window.innerHeight - rect.top + pad + 14) + 'px';
+            tourTooltip.style.bottom = Math.max(12, bottomPos) + 'px';
         }
 
         // Fill content
