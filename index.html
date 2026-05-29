@@ -96,10 +96,11 @@
             writing-mode: horizontal-tb; min-width: 70px; max-width: 70px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px 0 0 8px; padding: 8px 4px;
         }
         .locks-vertical-wrap .v-col-body {
-            flex: 1; flex-direction: row; flex-wrap: wrap; overflow-y: visible; overflow-x: auto; padding: 6px; gap: 4px; align-content: flex-start;
+            flex: 1; display: grid; grid-template-columns: repeat(var(--lock-lanes, 3), 1fr);
+            overflow-y: visible; overflow-x: auto; padding: 6px; gap: 4px; align-content: start;
         }
         .locks-vertical-wrap .v-col-body .batch-card {
-            width: auto; min-width: 100px; max-width: 160px;
+            width: auto; min-width: 0;
         }
         .locks-vertical-wrap .v-col-footer {
             writing-mode: horizontal-tb; min-width: 70px; max-width: 70px; display: flex; align-items: center; justify-content: center; border-top: none; border-left: 1px solid rgba(0,0,0,0.08); padding: 4px;
@@ -172,6 +173,7 @@
             font-weight: 800; font-size: 0.9rem; color: #2d3748;
             writing-mode: horizontal-tb;
         }
+        .v-col-header .col-lanes { font-size: 0.55rem; color: #94a3b8; font-weight: 600; margin-top: 1px; }
         .v-col-header .col-badge { font-size: 0.6rem; display: block; margin-top: 2px; color: #a0aec0; font-weight: 600; }
         .v-col-header .col-badge.active { color: #d69e2e; }
         .v-col-header .col-badge.hopper-badge-sm { color: #fff; background: #f6ad55; display: inline-block; padding: 1px 5px; border-radius: 3px; }
@@ -1469,7 +1471,9 @@ function buildZone(containerId, locks, hopperKey, hopperName, hopperClass, hoppe
 
 function lockColHTML(l) {
     const lc = LOCK_COLORS.find(c => c.id === (l.color||'slate')) || LOCK_COLORS[0];
-    const cssVars = `--lock-color:${lc.border};--lock-bg:${lc.bg};--lock-header:${lc.header};--lock-border-empty:${lc.borderEmpty}`;
+    const lanes = l.lanes || 3;
+    const cssVars = `--lock-color:${lc.border};--lock-bg:${lc.bg};--lock-header:${lc.header};--lock-border-empty:${lc.borderEmpty};--lock-lanes:${lanes}`;
+    const lanesInfo = lanes > 0 ? `<div class="col-lanes">${lanes} คลอง</div>` : '';
     return `<div class="v-col lock-style empty${hiddenSlots.has(l.key)?' slot-hidden':''}" id="drop-${l.key}" data-slot="${l.key}" style="${cssVars}">
         <div class="slot-gear-wrap" id="gear-${l.key}">
             <button class="slot-gear-btn" onclick="toggleGearMenu('${l.key}',event)">&#9881;</button>
@@ -1481,6 +1485,7 @@ function lockColHTML(l) {
         </div>
         <div class="v-col-header" draggable="true" ondragstart="onLockDS(event,'${l.key}')" ondragend="onLockDE(event,'${l.key}')" onclick="tapSelectLock('${l.key}',event)">
             <div class="col-name">${l.name}</div>
+            ${lanesInfo}
             <div class="col-badge" id="badge-${l.key}">ว่าง</div>
         </div>
         <div class="v-col-body" id="blocks-${l.key}"></div>
@@ -1669,6 +1674,7 @@ function renderLockCfgRows() {
 
             const tierBtnClass = (i > 0 && l.tierBreak) ? 'lcfg-tier-toggle active' : 'lcfg-tier-toggle';
             const tierBtn = i > 0 ? `<button class="${tierBtnClass}" onclick="toggleTierBreak('${zone}',${i})" title="แบ่งชั้น">ชั้น</button>` : '';
+            const lanesVal = l.lanes || 3;
 
             return tierHtml + `<div class="lcfg-row">
                 <span class="lcfg-key">${i+1}</span>
@@ -1678,6 +1684,7 @@ function renderLockCfgRows() {
                 </div>
                 ${tierBtn}
                 <input type="text" value="${l.name}" data-zone="${zone}" data-idx="${i}" onchange="onLockNameChange(this)" placeholder="ชื่อ Lock">
+                <input type="number" value="${lanesVal}" min="1" max="10" data-zone="${zone}" data-idx="${i}" onchange="onLockLanesChange(this)" style="width:36px;text-align:center;padding:4px 2px;border:1.5px solid #e2e8f0;border-radius:5px;font-size:0.75rem;font-weight:700;color:#64748b;" title="จำนวนคลอง">
                 <div class="lcfg-color-sel">
                     <button class="lcfg-color-btn" onclick="toggleColorDD(this,event)" title="เลือกสี">
                         <div class="cdot-preview" style="background:${cur.dot}"></div>
@@ -1704,6 +1711,13 @@ function toggleColorDD(btn, e) {
 document.addEventListener('click', () => {
     document.querySelectorAll('.lcfg-color-dd.open').forEach(d => d.classList.remove('open'));
 });
+
+function onLockLanesChange(el) {
+    const zone = el.dataset.zone;
+    const idx = parseInt(el.dataset.idx);
+    const arr = zone === 'A' ? lockCfgTemp.zoneA : lockCfgTemp.zoneB;
+    arr[idx].lanes = Math.max(1, Math.min(10, parseInt(el.value) || 3));
+}
 
 function toggleTierBreak(zone, idx) {
     // Save current input names first
@@ -1771,12 +1785,17 @@ function moveLockRow(zone, idx, dir) {
 }
 
 function saveLockConfig() {
-    // Read latest names from inputs
+    // Read latest names and lanes from inputs
     document.querySelectorAll('#lockCfgZoneA input, #lockCfgZoneB input').forEach(el => {
         const zone = el.dataset.zone;
         const idx = parseInt(el.dataset.idx);
         const arr = zone === 'A' ? lockCfgTemp.zoneA : lockCfgTemp.zoneB;
-        if (arr[idx]) arr[idx].name = el.value.trim() || arr[idx].key;
+        if (!arr[idx]) return;
+        if (el.type === 'number') {
+            arr[idx].lanes = Math.max(1, Math.min(10, parseInt(el.value) || 3));
+        } else {
+            arr[idx].name = el.value.trim() || arr[idx].key;
+        }
     });
 
     // Check for duplicate keys
