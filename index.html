@@ -884,7 +884,7 @@
             <button class="hdr-nav-btn" onclick="changeDate(1)" title="วันถัดไป">&#9654;</button>
         </div>
         <span class="hdr-pill hdr-batch" id="batchPill" onclick="openBatchConfig()" style="cursor:pointer;" title="คลิกเพื่อแก้ไข">Batch วันนี้</span>
-        <button class="hdr-pill" onclick="openLockConfig()" style="cursor:pointer;background:rgba(255,255,255,0.2);border:none;color:#fff;font-weight:600;font-size:0.8rem;" title="ตั้งค่า Lock">&#9881; Lock</button>
+        <button class="hdr-pill" id="btnLockConfig" onclick="openLockConfig()" style="cursor:pointer;background:rgba(255,255,255,0.2);border:none;color:#fff;font-weight:600;font-size:0.8rem;" title="ตั้งค่า Lock">&#9881; Lock</button>
         <button class="hdr-nav-btn" onclick="startTour()" title="วิธีใช้งาน" style="font-size:0.8rem;">?</button>
     </div>
 </div>
@@ -958,7 +958,7 @@
         </div><!-- end captureArea -->
 
         <!-- SUMMARY -->
-        <div class="card" style="margin-top:14px;">
+        <div class="card" id="cardSummary" style="margin-top:14px;">
             <h3>สรุป Hopper &amp; Lock</h3>
             <table class="stbl">
                 <thead><tr><th>ตำแหน่ง</th><th>Batch</th><th>รวม (ตัน)</th><th>จำนวน</th></tr></thead>
@@ -975,8 +975,8 @@
 
     <!-- RIGHT PANEL -->
     <div class="right-panel">
-        <button class="btn" onclick="openAddBatch()" style="background:#0d9488;color:#fff;font-weight:700;font-size:0.85rem;width:100%;padding:10px;">&#43; New Batch</button>
-        <div class="card">
+        <button class="btn" id="btnNewBatch" onclick="openAddBatch()" style="background:#0d9488;color:#fff;font-weight:700;font-size:0.85rem;width:100%;padding:10px;">&#43; New Batch</button>
+        <div class="card" id="cardHistory">
             <h3>ประวัติการดำเนินการ</h3>
             <div class="move-log" id="moveLog">
                 <div style="color:#a0aec0;text-align:center;padding:16px;font-size:0.8rem;">ลาก Batch จาก Lock วางที่ Hopper</div>
@@ -988,7 +988,7 @@
             <div id="fifoPanel"></div>
         </div>
 
-        <div class="card">
+        <div class="card" id="cardManage">
             <h3>จัดการ</h3>
             <div style="display:flex;flex-direction:column;gap:6px;">
                 <button class="btn btn-primary" onclick="loadSampleData()" style="font-size:0.78rem;">โหลดข้อมูลตัวอย่าง</button>
@@ -3671,31 +3671,67 @@ const TOUR_STEPS = [
     {
         target: '.header',
         title: 'ยินดีต้อนรับ!',
-        desc: 'นี่คือระบบจำลองผังแรมป์ปาล์ม (FFB Ramp Simulator) สำหรับจัดการ Batch ผลปาล์มในแต่ละวัน',
+        desc: 'ระบบจำลองผังแรมป์ปาล์ม (FFB Ramp Simulator) จัดการ Batch ผลปาล์มประจำวัน ลาก-วาง ได้ทั้ง PC และมือถือ',
         pos: 'bottom'
     },
     {
         target: '#batchPill',
-        title: 'ตั้งค่า Batch วันนี้',
-        desc: 'กดที่นี่เพื่อตั้งค่าเลข Batch ประจำวัน (B.###) แยกตามจุดรับซื้อ สาขา และรายย่อย รองรับระบบ Auto +3 ต่อวัน',
+        title: '① ตั้งค่า Batch วันนี้',
+        desc: 'ขั้นตอนแรก! กดที่นี่เพื่อตั้งเลข B.### ประจำวัน แยก 3 แหล่ง: จุดรับซื้อ (SM), สาขา (B), รายย่อย (VD) — รองรับ Auto +3 ต่อวัน',
+        pos: 'bottom'
+    },
+    {
+        target: '#btnLockConfig',
+        title: '② ตั้งค่า Lock',
+        desc: 'กำหนดจำนวน Lock, ตั้งชื่อ, เลือกสี, เรียงลำดับ และเลือกรูปแบบการวาง (แนวตั้ง/แนวนอน) สำหรับแต่ละ Zone',
+        pos: 'bottom'
+    },
+    {
+        target: '#btnNewBatch',
+        title: '③ เพิ่ม Batch ใหม่',
+        desc: 'กดเพื่อเพิ่ม Batch ผลปาล์ม → เลือกแหล่งที่มา → รหัส B.### จะเติมอัตโนมัติ → ใส่น้ำหนัก → เลือก Lock ที่จะวาง',
         pos: 'bottom'
     },
     {
         target: '.ramp-container',
-        title: 'ผังแรมป์ (Top View)',
-        desc: 'แสดง Lock และ Hopper ทั้งหมด แบ่งเป็น Zone A (ซ้าย) และ Zone B (ขวา) ลาก Batch วางใน Lock แล้วย้ายเข้า Hopper เพื่อส่งผลิต',
+        title: '④ ผังแรมป์ (Top View)',
+        desc: 'แสดง Lock + Hopper ทั้งหมด แบ่ง Zone A (ซ้าย) / Zone B (ขวา) — ลาก Batch ระหว่าง Lock ↔ Hopper ได้ คลิกที่ Batch เพื่อแก้ไข',
+        pos: 'bottom'
+    },
+    {
+        target: '.zone-labels',
+        title: '⑤ สลับ Zone (มือถือ)',
+        desc: 'บนมือถือจะเห็น Zone ทีละฝั่ง กดแท็บ "Zone A" หรือ "Zone B" เพื่อสลับดู',
         pos: 'bottom'
     },
     {
         target: '.capture-bar .btn-capture',
-        title: 'บันทึกรูป',
-        desc: 'กดเพื่อถ่ายภาพผังแรมป์เป็นรูป แชร์ให้ทีมงานหน้าลานได้ทันที',
+        title: '⑥ บันทึกรูป',
+        desc: 'ถ่ายภาพผังแรมป์ทั้ง 2 Zone เป็นรูปภาพ แชร์ให้ทีมงานหน้าลานได้ทันที (มือถือก็ได้ทั้ง 2 Zone)',
         pos: 'bottom'
     },
     {
+        target: '#cardHistory',
+        title: '⑦ ประวัติการดำเนินการ',
+        desc: 'บันทึกทุกการเคลื่อนย้าย: เพิ่ม, ย้าย, แก้ไข, ลบ, ผลิต — พร้อมเวลาและรายละเอียด เรียงจากล่าสุดก่อน',
+        pos: 'top'
+    },
+    {
         target: '#fifoPanel',
-        title: 'ลำดับ FIFO',
-        desc: 'เรียงลำดับ Batch ตาม B.### น้อย → มาก พร้อมบอกว่าตอนนี้อยู่ Lock หรือ Hopper ไหน Batch ที่ B.### น้อยสุดใน Hopper จะมีปุ่ม "ผลิต"',
+        title: '⑧ ลำดับ FIFO',
+        desc: 'เรียงทุก Batch ตาม B.### น้อย→มาก บอกตำแหน่งปัจจุบัน (Lock/Hopper) Batch ที่ B.### น้อยสุดใน Hopper จะมีปุ่ม "ผลิต"',
+        pos: 'top'
+    },
+    {
+        target: '#cardSummary',
+        title: '⑨ สรุปยอด',
+        desc: 'ตารางสรุปน้ำหนักรวมและจำนวน Batch แยกตาม Hopper, Lock, Zone พร้อมยอดรวมแยกตามแหล่งที่มา',
+        pos: 'top'
+    },
+    {
+        target: '#cardManage',
+        title: '⑩ จัดการข้อมูล',
+        desc: '"โหลดข้อมูลตัวอย่าง" เพื่อทดลองใช้ หรือ "ล้างข้อมูลทั้งหมด" เพื่อเริ่มใหม่ — ข้อมูลบันทึกในเครื่อง (localStorage) อัตโนมัติ',
         pos: 'top'
     }
 ];
