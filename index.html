@@ -81,30 +81,31 @@
         .columns-row {
             flex: 1; display: flex; gap: 6px; min-height: 340px;
         }
-        /* Layout B: locks stacked vertically */
+        /* Layout B: locks stacked vertically, hopper stays as normal column */
         .columns-row.layout-vertical {
-            flex-direction: column; gap: 4px; min-height: auto;
+            flex-direction: row; gap: 6px; min-height: 340px;
         }
-        .columns-row.layout-vertical .v-col {
+        /* Locks wrapper: stacks locks vertically */
+        .locks-vertical-wrap {
+            display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0;
+        }
+        .locks-vertical-wrap .v-col {
             flex-direction: row; min-height: auto; border-radius: 8px;
         }
-        .columns-row.layout-vertical .v-col-header {
+        .locks-vertical-wrap .v-col-header {
             writing-mode: horizontal-tb; min-width: 70px; max-width: 70px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px 0 0 8px; padding: 8px 4px;
         }
-        .columns-row.layout-vertical .v-col-body {
+        .locks-vertical-wrap .v-col-body {
             flex: 1; flex-direction: row; flex-wrap: wrap; overflow-y: visible; overflow-x: auto; padding: 6px; gap: 4px; align-content: flex-start;
         }
-        .columns-row.layout-vertical .v-col-body .batch-card {
+        .locks-vertical-wrap .v-col-body .batch-card {
             width: auto; min-width: 100px; max-width: 160px;
         }
-        .columns-row.layout-vertical .v-col-footer {
+        .locks-vertical-wrap .v-col-footer {
             writing-mode: horizontal-tb; min-width: 70px; max-width: 70px; display: flex; align-items: center; justify-content: center; border-top: none; border-left: 1px solid rgba(0,0,0,0.08); padding: 4px;
         }
-        .columns-row.layout-vertical .hopper-vlabel { display: none; }
-        .columns-row.layout-vertical .slot-gear-wrap { top: 2px; right: 2px; }
-        /* Separated hopper when using vertical lock layout */
-        .hopper-separated { margin-top: 6px; }
-        .hopper-separated .v-col { min-height: 120px; }
+        .locks-vertical-wrap .hopper-vlabel { display: none; }
+        .locks-vertical-wrap .slot-gear-wrap { top: 2px; right: 2px; }
 
         /* Shared vertical column style for both locks and hoppers */
         .v-col {
@@ -372,7 +373,8 @@
         .capture-desktop .zone-labels { display: none !important; }
         .capture-desktop .capture-zone-title { display: block !important; }
         .capture-desktop .columns-row { overflow-x: visible !important; flex-wrap: nowrap !important; gap: 4px !important; }
-        .capture-desktop .columns-row.layout-vertical { flex-direction: column !important; gap: 4px !important; }
+        .capture-desktop .columns-row.layout-vertical { flex-direction: row !important; gap: 6px !important; }
+        .capture-desktop .locks-vertical-wrap { display: flex !important; flex-direction: column !important; gap: 4px !important; flex: 1 !important; }
         .capture-desktop .v-col { min-width: 90px !important; flex: 1 !important; overflow: hidden !important; }
         .capture-desktop .v-col .hopper-vlabel { display: none !important; }
         .capture-desktop .batch-card { overflow: hidden !important; }
@@ -1341,16 +1343,19 @@ function buildZone(containerId, locks, hopperKey, hopperName, hopperClass, hoppe
     container.classList.remove('layout-vertical');
     if (isVertical) container.classList.add('layout-vertical');
 
-    // Remove any existing separated hopper from previous builds
+    // Remove any leftover separated hopper from old code
     const prevHopper = container.parentElement.querySelector('.hopper-separated-' + hopperKey);
     if (prevHopper) prevHopper.remove();
 
     let html = '';
 
-    if (!isVertical) {
-        // Horizontal layout: hopper inside columns-row (original behavior)
-        if (hopperKey === 'hopperB') html += hopperColHTML(hopperKey, hopperName, hopperClass, hopperLabel);
+    // Zone B: hopper first (always as column, regardless of layout)
+    if (hopperKey === 'hopperB') {
+        html += hopperColHTML(hopperKey, hopperName, hopperClass, hopperLabel);
     }
+
+    // Vertical: wrap locks in a sub-container that stacks vertically
+    if (isVertical) html += '<div class="locks-vertical-wrap">';
 
     locks.forEach(l => {
         html += `<div class="v-col lock-style empty${hiddenSlots.has(l.key)?' slot-hidden':''}" id="drop-${l.key}" data-slot="${l.key}">
@@ -1371,21 +1376,14 @@ function buildZone(containerId, locks, hopperKey, hopperName, hopperClass, hoppe
         </div>`;
     });
 
-    if (!isVertical) {
-        // Horizontal layout: hopper inside columns-row
-        if (hopperKey === 'hopperA') html += hopperColHTML(hopperKey, hopperName, hopperClass, hopperLabel);
+    if (isVertical) html += '</div>';
+
+    // Zone A: hopper last (always as column)
+    if (hopperKey === 'hopperA') {
+        html += hopperColHTML(hopperKey, hopperName, hopperClass, hopperLabel);
     }
 
     container.innerHTML = html;
-
-    // Vertical layout: hopper as a separate section outside columns-row
-    if (isVertical) {
-        const hopperDiv = document.createElement('div');
-        hopperDiv.className = 'hopper-separated hopper-separated-' + hopperKey;
-        hopperDiv.innerHTML = hopperColHTML(hopperKey, hopperName, hopperClass, hopperLabel);
-        // Insert hopper after the columns-row
-        container.parentElement.insertBefore(hopperDiv, container.nextSibling);
-    }
 }
 
 function hopperColHTML(key, name, cls, label) {
