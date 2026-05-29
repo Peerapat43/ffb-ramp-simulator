@@ -3778,7 +3778,21 @@ function showTourStep() {
 
     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-    setTimeout(() => {
+    // Wait for scroll to finish, then position tooltip
+    let lastY = -1;
+    let stable = 0;
+    const poller = setInterval(() => {
+        const r = el.getBoundingClientRect();
+        if (Math.abs(r.top - lastY) < 2) stable++;
+        else stable = 0;
+        lastY = r.top;
+        if (stable >= 3) { clearInterval(poller); positionTourTooltip(el, step); }
+    }, 100);
+    // Fallback: force after 1.2s
+    setTimeout(() => { clearInterval(poller); positionTourTooltip(el, step); }, 1200);
+}
+
+function positionTourTooltip(el, step) {
         const rect = el.getBoundingClientRect();
         const pad = 8;
 
@@ -3834,7 +3848,6 @@ function showTourStep() {
 
         // Animate in
         requestAnimationFrame(() => tourTooltip.classList.add('show'));
-    }, 400);
 }
 
 function nextTourStep() {
