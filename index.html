@@ -406,8 +406,8 @@
 
         /* EDIT MODAL */
         /* Lock config zones layout */
-        .lock-cfg-zones { display: flex; gap: 0; background: #f4f7fa; border: 1.5px solid #e2e8f0; border-radius: 14px; overflow: hidden; }
-        .lock-cfg-zone { flex: 1; padding: 16px; }
+        .lock-cfg-zones { display: flex; gap: 0; background: #f4f7fa; border: 1.5px solid #e2e8f0; border-radius: 14px; overflow: visible; }
+        .lock-cfg-zone { flex: 1; padding: 16px; min-width: 0; overflow: visible; }
         .lock-cfg-zone + .lock-cfg-zone { border-left: 1.5px solid #e2e8f0; }
         .lock-cfg-zone-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #e2e8f0; }
         .lock-cfg-zone-title { font-weight: 800; font-size: 0.82rem; letter-spacing: 0.3px; }
@@ -472,9 +472,9 @@
 
         /* Lock config rows */
         .lcfg-row {
-            display: flex; align-items: center; gap: 6px; margin-bottom: 4px;
-            padding: 8px 10px; background: #fff; border-radius: 8px; border: 1.5px solid #e2e8f0;
-            transition: border-color 0.15s;
+            display: flex; align-items: center; gap: 4px; margin-bottom: 4px;
+            padding: 6px 8px; background: #fff; border-radius: 8px; border: 1.5px solid #e2e8f0;
+            transition: border-color 0.15s; flex-wrap: wrap;
         }
         .lcfg-row:hover { border-color: #cbd5e0; }
         .lcfg-row .lcfg-key { font-size: 0.65rem; color: #a0aec0; width: 18px; text-align: center; flex-shrink: 0; font-weight: 700; }
@@ -1221,6 +1221,18 @@
             <h3 style="margin:0;font-size:1.08rem;color:#1a202c;font-weight:800;">ตั้งค่า Lock</h3>
             <div style="font-size:0.7rem;color:#a0aec0;">จัดการ Lock แต่ละ Zone</div>
         </div>
+        <div style="margin-bottom:14px;padding:10px 16px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;font-size:0.65rem;color:#475569;line-height:1.7;">
+            <div style="display:flex;flex-wrap:wrap;gap:4px 14px;justify-content:center;">
+                <span>▲▼ เรียงลำดับ</span>
+                <span><b style="border:1px solid #0d9488;color:#0d9488;padding:0 3px;border-radius:2px;font-size:0.58rem;">ชั้น</b> แบ่งกลุ่ม</span>
+                <span>📝 ตั้งชื่อ</span>
+                <span><b style="color:#0e7490;">1-8</b> แถว</span>
+                <span>🎨 สี</span>
+                <span>👁 ซ่อน/ไม่นับ</span>
+                <span>✕ ลบ</span>
+                <span><b>A</b>=ตั้ง <b>B</b>=นอน</span>
+            </div>
+        </div>
         <div class="lock-cfg-zones">
             <div class="lock-cfg-zone">
                 <div class="lock-cfg-zone-header">
@@ -1249,19 +1261,6 @@
                 </div>
                 <div id="lockCfgZoneB"></div>
                 <button class="lcfg-add-btn" onclick="addLockRow('B')">+ เพิ่ม Lock</button>
-            </div>
-        </div>
-        <div style="margin-top:14px;padding:12px 16px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;font-size:0.68rem;color:#475569;line-height:1.7;">
-            <div style="font-weight:700;color:#0e7490;margin-bottom:6px;font-size:0.75rem;">วิธีใช้งาน</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;">
-                <span>▲▼ เรียงลำดับ Lock</span>
-                <span><b style="border:1px solid #0d9488;color:#0d9488;padding:0 3px;border-radius:2px;font-size:0.6rem;">ชั้น</b> แบ่งกลุ่มชั้น (รูปแบบ B)</span>
-                <span>📝 ตั้งชื่อ Lock ได้อิสระ</span>
-                <span><b style="color:#0e7490;">1-8</b> จำนวนแถวกองปาล์ม</span>
-                <span>🎨 เลือกสี Lock</span>
-                <span>👁 ซ่อน/แสดง (ไม่นับน้ำหนัก)</span>
-                <span>✕ ลบ Lock (Batch ย้ายไป Lock แรก)</span>
-                <span><b>รูปแบบ A</b> = แนวตั้ง | <b>B</b> = แนวนอน</span>
             </div>
         </div>
         <div class="edit-actions" style="margin-top:16px;">
