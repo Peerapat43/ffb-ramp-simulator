@@ -1473,7 +1473,7 @@ function lockColHTML(l) {
     const lc = LOCK_COLORS.find(c => c.id === (l.color||'slate')) || LOCK_COLORS[0];
     const lanes = l.lanes || 3;
     const cssVars = `--lock-color:${lc.border};--lock-bg:${lc.bg};--lock-header:${lc.header};--lock-border-empty:${lc.borderEmpty};--lock-lanes:${lanes}`;
-    const lanesInfo = lanes > 0 ? `<div class="col-lanes">${lanes} แถว</div>` : '';
+    const lanesInfo = '';
     return `<div class="v-col lock-style empty${hiddenSlots.has(l.key)?' slot-hidden':''}" id="drop-${l.key}" data-slot="${l.key}" style="${cssVars}">
         <div class="slot-gear-wrap" id="gear-${l.key}">
             <button class="slot-gear-btn" onclick="toggleGearMenu('${l.key}',event)">&#9881;</button>
