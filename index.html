@@ -938,12 +938,11 @@
                                 <button class="slot-gear-item" data-slot-key="hopperC" onclick="toggleSlotHidden('hopperC',event);closeAllGearMenus();">
                                     <span class="gear-eye-icon"></span> <span class="gear-eye-label"></span>
                                 </button>
-                                <button class="slot-gear-item danger" onclick="clearHopper('hopperC',event);closeAllGearMenus();">🧹 ล้าง Hopper</button>
+                                <button class="slot-gear-item danger" onclick="clearHopper('hopperC',event);closeAllGearMenus();">🗑 ล้างทั้งหมด</button>
                             </div>
                         </div>
                         <div class="hopper-header">
-                            <span class="hopper-name">Hopper C</span>
-                            <span class="hopper-badge">FIFO</span>
+                            <span class="hopper-name">HOPPER C</span>
                         </div>
                         <div class="hopper-batches" id="blocks-hopperC"></div>
                         <div class="hopper-total" id="total-hopperC"></div>
@@ -1501,12 +1500,11 @@ function hopperColHTML(key, name, cls, label) {
                 <button class="slot-gear-item" data-slot-key="${key}" onclick="toggleSlotHidden('${key}',event);closeAllGearMenus();">
                     <span class="gear-eye-icon"></span> <span class="gear-eye-label"></span>
                 </button>
-                <button class="slot-gear-item danger" onclick="clearHopper('${key}',event);closeAllGearMenus();">🧹 ล้าง Hopper</button>
+                <button class="slot-gear-item danger" onclick="clearHopper('${key}',event);closeAllGearMenus();">🗑 ล้างทั้งหมด</button>
             </div>
         </div>
         <div class="v-col-header">
             <div class="col-name">${name}</div>
-            <div class="col-badge hopper-badge-sm">FIFO</div>
         </div>
         <div class="v-col-body" id="blocks-${key}"></div>
         <div class="v-col-footer" id="total-${key}"></div>
