@@ -951,15 +951,6 @@
                     <div class="capture-zone-title capture-zone-a">ฝั่ง 1,000 ตัน (Zone A)</div>
                     <!-- Hopper C (horizontal top) -->
                     <div class="hopper-top hopper-c-bg" id="drop-hopperC" data-slot="hopperC" style="position:relative;">
-                        <div class="slot-gear-wrap" id="gear-hopperC">
-                            <button class="slot-gear-btn" onclick="toggleGearMenu('hopperC',event)">&#9881;</button>
-                            <div class="slot-gear-menu">
-                                <button class="slot-gear-item" data-slot-key="hopperC" onclick="toggleSlotHidden('hopperC',event);closeAllGearMenus();">
-                                    <span class="gear-eye-icon"></span> <span class="gear-eye-label"></span>
-                                </button>
-                                <button class="slot-gear-item danger" onclick="clearHopper('hopperC',event);closeAllGearMenus();">🗑 ล้างทั้งหมด</button>
-                            </div>
-                        </div>
                         <div class="hopper-header">
                             <span class="hopper-name">HOPPER C</span>
                         </div>
@@ -1513,15 +1504,6 @@ function lockColHTML(l) {
 
 function hopperColHTML(key, name, cls, label) {
     return `<div class="v-col ${cls}${hiddenSlots.has(key)?' slot-hidden':''}" id="drop-${key}" data-slot="${key}">
-        <div class="slot-gear-wrap" id="gear-${key}">
-            <button class="slot-gear-btn" onclick="toggleGearMenu('${key}',event)">&#9881;</button>
-            <div class="slot-gear-menu">
-                <button class="slot-gear-item" data-slot-key="${key}" onclick="toggleSlotHidden('${key}',event);closeAllGearMenus();">
-                    <span class="gear-eye-icon"></span> <span class="gear-eye-label"></span>
-                </button>
-                <button class="slot-gear-item danger" onclick="clearHopper('${key}',event);closeAllGearMenus();">🗑 ล้างทั้งหมด</button>
-            </div>
-        </div>
         <div class="v-col-header">
             <div class="col-name">${name}</div>
         </div>
