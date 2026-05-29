@@ -830,42 +830,39 @@
         .rpt-legend-dot { width: 10px; height: 10px; border-radius: 3px; }
 
         /* ===== GUIDED TOUR / ONBOARDING ===== */
-        .tour-overlay {
+        .tour-backdrop {
             display: none; position: fixed; inset: 0; z-index: 9000;
-            background: rgba(0,0,0,0.7); transition: opacity 0.3s;
         }
-        .tour-overlay.active { display: block; }
+        .tour-backdrop.active { display: block; }
         .tour-spotlight {
-            position: absolute; border-radius: 10px;
-            box-shadow: 0 0 0 9999px rgba(0,0,0,0.7);
-            transition: all 0.4s ease; pointer-events: none;
+            position: fixed; border-radius: 10px;
+            box-shadow: 0 0 0 9999px rgba(0,0,0,0.75);
+            transition: all 0.4s ease; z-index: 9001; pointer-events: none;
         }
         .tour-tooltip {
-            position: absolute; background: #fff; border-radius: 14px;
-            padding: 20px 22px; max-width: 320px; width: max-content;
-            box-shadow: 0 12px 40px rgba(0,0,0,0.3); z-index: 9001;
+            position: fixed; background: #fff; border-radius: 14px;
+            padding: 20px 22px; width: 320px; max-width: 90vw;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.35); z-index: 9002;
             transition: all 0.35s ease; opacity: 0; transform: translateY(10px);
         }
         .tour-tooltip.show { opacity: 1; transform: translateY(0); }
         .tour-step-num {
             display: inline-flex; align-items: center; justify-content: center;
-            width: 24px; height: 24px; border-radius: 50%;
+            width: 26px; height: 26px; border-radius: 50%;
             background: linear-gradient(135deg,#0d9488,#0f766e);
             color: #fff; font-size: 0.72rem; font-weight: 800; margin-right: 8px; flex-shrink: 0;
         }
         .tour-title { font-weight: 800; font-size: 0.95rem; color: #134e4a; display: flex; align-items: center; margin-bottom: 8px; }
         .tour-desc { font-size: 0.8rem; color: #4a5568; line-height: 1.6; margin-bottom: 16px; }
-        .tour-actions { display: flex; gap: 8px; align-items: center; }
+        .tour-actions { display: flex; gap: 8px; align-items: center; justify-content: flex-end; }
         .tour-dots { display: flex; gap: 5px; flex: 1; }
         .tour-dot { width: 8px; height: 8px; border-radius: 50%; background: #cbd5e1; transition: all 0.2s; }
         .tour-dot.active { background: #0d9488; width: 20px; border-radius: 4px; }
         .tour-dot.done { background: #14b8a6; }
-        .tour-btn-skip { background: none; border: none; color: #94a3b8; font-size: 0.75rem; cursor: pointer; padding: 6px 10px; }
-        .tour-btn-skip:hover { color: #64748b; }
         .tour-btn-next {
             background: linear-gradient(135deg,#0d9488,#0f766e); color: #fff;
-            border: none; border-radius: 8px; padding: 8px 18px;
-            font-size: 0.82rem; font-weight: 700; cursor: pointer; transition: all 0.15s;
+            border: none; border-radius: 8px; padding: 10px 22px;
+            font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: all 0.15s;
         }
         .tour-btn-next:hover { background: linear-gradient(135deg,#0f766e,#115e59); }
         .tour-progress { height: 3px; background: #e2e8f0; border-radius: 2px; margin-bottom: 14px; overflow: hidden; }
@@ -888,7 +885,7 @@
         </div>
         <span class="hdr-pill hdr-batch" id="batchPill" onclick="openBatchConfig()" style="cursor:pointer;" title="คลิกเพื่อแก้ไข">Batch วันนี้</span>
         <button class="hdr-pill" onclick="openLockConfig()" style="cursor:pointer;background:rgba(255,255,255,0.2);border:none;color:#fff;font-weight:600;font-size:0.8rem;" title="ตั้งค่า Lock">&#9881; Lock</button>
-        <button class="hdr-nav-btn" onclick="localStorage.removeItem('ffb3_tour_done');startTour()" title="วิธีใช้งาน" style="font-size:0.8rem;">?</button>
+        <button class="hdr-nav-btn" onclick="startTour()" title="วิธีใช้งาน" style="font-size:0.8rem;">?</button>
     </div>
 </div>
 
@@ -3680,52 +3677,61 @@ const TOUR_STEPS = [
     {
         target: '#batchPill',
         title: 'ตั้งค่า Batch วันนี้',
-        desc: 'กดที่นี่เพื่อตั้งค่าเลข Batch ประจำวัน (B.###) แยกตามจุดรับซื้อ สาขา และรายย่อย',
+        desc: 'กดที่นี่เพื่อตั้งค่าเลข Batch ประจำวัน (B.###) แยกตามจุดรับซื้อ สาขา และรายย่อย รองรับระบบ Auto +3 ต่อวัน',
         pos: 'bottom'
     },
     {
         target: '.ramp-container',
         title: 'ผังแรมป์ (Top View)',
-        desc: 'แสดง Lock และ Hopper ทั้งหมด แบ่งเป็น Zone A (ซ้าย) และ Zone B (ขวา) ลาก Batch ระหว่าง Lock และ Hopper ได้',
+        desc: 'แสดง Lock และ Hopper ทั้งหมด แบ่งเป็น Zone A (ซ้าย) และ Zone B (ขวา) ลาก Batch วางใน Lock แล้วย้ายเข้า Hopper เพื่อส่งผลิต',
         pos: 'bottom'
     },
     {
         target: '.capture-bar .btn-capture',
         title: 'บันทึกรูป',
-        desc: 'กดเพื่อ capture ภาพผังแรมป์เป็นรูป แชร์ให้ทีมงานได้ทันที',
+        desc: 'กดเพื่อถ่ายภาพผังแรมป์เป็นรูป แชร์ให้ทีมงานหน้าลานได้ทันที',
         pos: 'bottom'
     },
     {
         target: '#fifoPanel',
         title: 'ลำดับ FIFO',
-        desc: 'เรียงลำดับ Batch ทั้งหมดตาม B.### น้อย → มาก พร้อมบอกตำแหน่งปัจจุบันว่าอยู่ Lock หรือ Hopper ไหน',
+        desc: 'เรียงลำดับ Batch ตาม B.### น้อย → มาก พร้อมบอกว่าตอนนี้อยู่ Lock หรือ Hopper ไหน Batch ที่ B.### น้อยสุดใน Hopper จะมีปุ่ม "ผลิต"',
         pos: 'top'
     }
 ];
 
 let tourStep = 0;
-let tourOverlay = null;
+let tourSpotlight = null;
+let tourTooltip = null;
+let tourBackdrop = null;
 
 function startTour() {
-    if (document.querySelector('.tour-overlay')) document.querySelector('.tour-overlay').remove();
+    // Clean up existing tour elements
+    document.querySelectorAll('.tour-backdrop,.tour-spotlight,.tour-tooltip').forEach(e => e.remove());
 
-    tourOverlay = document.createElement('div');
-    tourOverlay.className = 'tour-overlay active';
-    tourOverlay.innerHTML = `
-        <div class="tour-spotlight"></div>
-        <div class="tour-tooltip">
-            <div class="tour-progress"><div class="tour-progress-bar"></div></div>
-            <div class="tour-title"><span class="tour-step-num"></span><span class="tour-title-text"></span></div>
-            <div class="tour-desc"></div>
-            <div class="tour-actions">
-                <div class="tour-dots"></div>
-                <button class="tour-btn-skip" onclick="endTour()">ข้าม</button>
-                <button class="tour-btn-next" onclick="nextTourStep()">ต่อไป</button>
-            </div>
+    tourBackdrop = document.createElement('div');
+    tourBackdrop.className = 'tour-backdrop active';
+    document.body.appendChild(tourBackdrop);
+
+    tourSpotlight = document.createElement('div');
+    tourSpotlight.className = 'tour-spotlight';
+    document.body.appendChild(tourSpotlight);
+
+    tourTooltip = document.createElement('div');
+    tourTooltip.className = 'tour-tooltip';
+    tourTooltip.innerHTML = `
+        <div class="tour-progress"><div class="tour-progress-bar"></div></div>
+        <div class="tour-title"><span class="tour-step-num"></span><span class="tour-title-text"></span></div>
+        <div class="tour-desc"></div>
+        <div class="tour-actions">
+            <div class="tour-dots"></div>
+            <button class="tour-btn-next" onclick="nextTourStep()">ต่อไป →</button>
         </div>
     `;
-    document.body.appendChild(tourOverlay);
+    document.body.appendChild(tourTooltip);
+
     tourStep = 0;
+    lockBodyScroll();
     showTourStep();
 }
 
@@ -3735,61 +3741,60 @@ function showTourStep() {
     const el = document.querySelector(step.target);
     if (!el) { tourStep++; showTourStep(); return; }
 
-    // Scroll element into view
+    // Unlock scroll temporarily to scroll to element
+    unlockBodyScroll();
     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
     setTimeout(() => {
+        lockBodyScroll();
         const rect = el.getBoundingClientRect();
         const pad = 8;
 
         // Position spotlight
-        const spot = tourOverlay.querySelector('.tour-spotlight');
-        spot.style.left = (rect.left - pad) + 'px';
-        spot.style.top = (rect.top - pad) + 'px';
-        spot.style.width = (rect.width + pad * 2) + 'px';
-        spot.style.height = (rect.height + pad * 2) + 'px';
+        tourSpotlight.style.left = (rect.left - pad) + 'px';
+        tourSpotlight.style.top = (rect.top - pad) + 'px';
+        tourSpotlight.style.width = (rect.width + pad * 2) + 'px';
+        tourSpotlight.style.height = (rect.height + pad * 2) + 'px';
 
         // Position tooltip
-        const tip = tourOverlay.querySelector('.tour-tooltip');
-        tip.classList.remove('show');
+        tourTooltip.classList.remove('show');
 
-        const tipW = 300;
+        const tipW = Math.min(320, window.innerWidth - 24);
         let tipLeft = rect.left + rect.width / 2 - tipW / 2;
         tipLeft = Math.max(12, Math.min(tipLeft, window.innerWidth - tipW - 12));
-        tip.style.left = tipLeft + 'px';
-        tip.style.width = tipW + 'px';
+        tourTooltip.style.left = tipLeft + 'px';
+        tourTooltip.style.width = tipW + 'px';
 
         if (step.pos === 'bottom') {
-            tip.style.top = (rect.bottom + pad + 12) + 'px';
-            tip.style.bottom = 'auto';
+            const topPos = rect.bottom + pad + 14;
+            tourTooltip.style.top = topPos + 'px';
+            tourTooltip.style.bottom = 'auto';
         } else {
-            tip.style.top = 'auto';
-            tip.style.bottom = (window.innerHeight - rect.top + pad + 12) + 'px';
+            tourTooltip.style.top = 'auto';
+            tourTooltip.style.bottom = (window.innerHeight - rect.top + pad + 14) + 'px';
         }
 
         // Fill content
-        tourOverlay.querySelector('.tour-step-num').textContent = tourStep + 1;
-        tourOverlay.querySelector('.tour-title-text').textContent = step.title;
-        tourOverlay.querySelector('.tour-desc').textContent = step.desc;
+        tourTooltip.querySelector('.tour-step-num').textContent = tourStep + 1;
+        tourTooltip.querySelector('.tour-title-text').textContent = step.title;
+        tourTooltip.querySelector('.tour-desc').textContent = step.desc;
 
         // Progress bar
         const pct = ((tourStep + 1) / TOUR_STEPS.length * 100);
-        tourOverlay.querySelector('.tour-progress-bar').style.width = pct + '%';
+        tourTooltip.querySelector('.tour-progress-bar').style.width = pct + '%';
 
         // Dots
-        const dotsHtml = TOUR_STEPS.map((_, i) => {
-            const cls = i < tourStep ? 'done' : i === tourStep ? 'active' : '';
-            return `<div class="tour-dot ${cls}"></div>`;
-        }).join('');
-        tourOverlay.querySelector('.tour-dots').innerHTML = dotsHtml;
+        tourTooltip.querySelector('.tour-dots').innerHTML = TOUR_STEPS.map((_, i) =>
+            `<div class="tour-dot ${i < tourStep ? 'done' : i === tourStep ? 'active' : ''}"></div>`
+        ).join('');
 
         // Button text
-        const nextBtn = tourOverlay.querySelector('.tour-btn-next');
-        nextBtn.textContent = tourStep === TOUR_STEPS.length - 1 ? 'เริ่มใช้งาน!' : 'ต่อไป →';
+        const nextBtn = tourTooltip.querySelector('.tour-btn-next');
+        nextBtn.textContent = tourStep === TOUR_STEPS.length - 1 ? '✓ เริ่มใช้งาน!' : 'ต่อไป →';
 
         // Animate in
-        requestAnimationFrame(() => tip.classList.add('show'));
-    }, 350);
+        requestAnimationFrame(() => tourTooltip.classList.add('show'));
+    }, 400);
 }
 
 function nextTourStep() {
@@ -3798,22 +3803,13 @@ function nextTourStep() {
 }
 
 function endTour() {
-    if (tourOverlay) {
-        tourOverlay.classList.remove('active');
-        setTimeout(() => { if (tourOverlay) tourOverlay.remove(); tourOverlay = null; }, 300);
-    }
+    unlockBodyScroll();
+    [tourBackdrop, tourSpotlight, tourTooltip].forEach(el => { if (el) el.remove(); });
+    tourBackdrop = tourSpotlight = tourTooltip = null;
     localStorage.setItem('ffb3_tour_done', '1');
 }
 
-// Auto-start tour on first visit
-function checkTourOnLoad() {
-    if (!localStorage.getItem('ffb3_tour_done')) {
-        setTimeout(() => startTour(), 800);
-    }
-}
-
 init();
-checkTourOnLoad();
 </script>
 </body>
 </html>
