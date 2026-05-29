@@ -253,6 +253,12 @@
         .slot-gear-item.danger:hover { background: #fff5f5; }
         .lcfg-lanes-sel { width: 38px; padding: 4px 2px; border: 1.5px solid #e2e8f0; border-radius: 6px; font-size: 0.78rem; font-weight: 700; color: #0e7490; text-align: center; background: #f8fafc; cursor: pointer; flex-shrink: 0; }
         .lcfg-lanes-sel:focus { border-color: #0d9488; outline: none; }
+        .lcfg-hopper-section { margin-top: 10px; padding-top: 10px; border-top: 1px dashed #e2e8f0; }
+        .lcfg-hopper-row { display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: #fff; border-radius: 6px; border: 1.5px solid #e2e8f0; margin-bottom: 4px; }
+        .lcfg-hopper-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+        .lcfg-hopper-name { font-weight: 700; font-size: 0.78rem; flex: 1; }
+        .lcfg-hopper-clear { background: none; border: 1px solid #fecaca; color: #dc2626; font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; cursor: pointer; }
+        .lcfg-hopper-clear:hover { background: #fef2f2; }
         .lcfg-eye { background: none; border: 1px solid #e2e8f0; border-radius: 5px; width: 26px; height: 26px; cursor: pointer; font-size: 0.7rem; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
         .lcfg-eye:hover { background: #f1f5f9; }
         .lcfg-eye.hidden { background: #fef2f2; border-color: #fecaca; }
@@ -1243,6 +1249,7 @@
                 </div>
                 <div id="lockCfgZoneA"></div>
                 <button class="lcfg-add-btn" onclick="addLockRow('A')">+ เพิ่ม Lock</button>
+                <div class="lcfg-hopper-section" id="lcfgHopperA"></div>
             </div>
             <div class="lock-cfg-zone">
                 <div class="lock-cfg-zone-header">
@@ -1257,6 +1264,7 @@
                 </div>
                 <div id="lockCfgZoneB"></div>
                 <button class="lcfg-add-btn" onclick="addLockRow('B')">+ เพิ่ม Lock</button>
+                <div class="lcfg-hopper-section" id="lcfgHopperB"></div>
             </div>
         </div>
         <div class="edit-actions" style="margin-top:16px;">
@@ -1636,9 +1644,56 @@ function openLockConfig() {
         layoutB: lockConfig.layoutB || 'horizontal'
     };
     renderLockCfgRows();
+    renderHopperCfgRows();
     updateLayoutButtons();
     document.getElementById('lockConfigModal').classList.add('active');
     lockBodyScroll();
+}
+
+function renderHopperCfgRows() {
+    const hoppers = {
+        A: [
+            { key: 'hopperA', name: 'Hopper A', color: '#34d399' },
+            { key: 'hopperC', name: 'Hopper C', color: '#a78bfa' }
+        ],
+        B: [
+            { key: 'hopperB', name: 'Hopper B', color: '#60a5fa' }
+        ]
+    };
+    ['A','B'].forEach(zone => {
+        const el = document.getElementById('lcfgHopper' + zone);
+        if (!el) return;
+        el.innerHTML = hoppers[zone].map(h => {
+            const isHidden = hiddenSlots.has(h.key);
+            const count = (slots[h.key] || []).length;
+            return `<div class="lcfg-hopper-row${isHidden ? ' lcfg-row-hidden' : ''}">
+                <div class="lcfg-hopper-dot" style="background:${h.color}"></div>
+                <span class="lcfg-hopper-name">${h.name}</span>
+                <span style="font-size:0.65rem;color:#94a3b8;">${count} Batch</span>
+                <button class="lcfg-eye${isHidden?' hidden':''}" onclick="toggleHopperHiddenCfg('${h.key}')" title="${isHidden?'ซ่อนอยู่':'แสดงอยู่'}">${isHidden?'🚫':'👁'}</button>
+                <button class="lcfg-hopper-clear" onclick="clearHopperFromCfg('${h.key}')">🗑 ล้าง</button>
+            </div>`;
+        }).join('');
+    });
+}
+
+function toggleHopperHiddenCfg(key) {
+    if (hiddenSlots.has(key)) hiddenSlots.delete(key);
+    else hiddenSlots.add(key);
+    localStorage.setItem('ffb3_hidden', JSON.stringify([...hiddenSlots]));
+    renderHopperCfgRows();
+    renderAll();
+}
+
+function clearHopperFromCfg(key) {
+    const arr = slots[key];
+    if (!arr || !arr.length) { toast(NAMES[key] + ' ว่างอยู่แล้ว'); return; }
+    if (!confirm('ล้าง ' + NAMES[key] + ' ทั้งหมด? (' + arr.length + ' Batch)')) return;
+    arr.forEach(b => logAction('clear', b.code, key, null, b.weight));
+    slots[key] = [];
+    save(); renderAll();
+    renderHopperCfgRows();
+    toast('ล้าง ' + NAMES[key] + ' สำเร็จ');
 }
 
 function setZoneLayout(zone, layout) {
