@@ -251,8 +251,8 @@
         .slot-gear-item:hover { background: #f7fafc; }
         .slot-gear-item.danger { color: #e53e3e; }
         .slot-gear-item.danger:hover { background: #fff5f5; }
-        .gear-lanes-row { display: flex; align-items: center; gap: 6px; justify-content: space-between; }
-        .gear-lanes-input { width: 40px; text-align: center; padding: 3px 4px; border: 1.5px solid #e2e8f0; border-radius: 5px; font-size: 0.78rem; font-weight: 700; color: #0e7490; }
+        .lcfg-lanes-sel { width: 38px; padding: 4px 2px; border: 1.5px solid #e2e8f0; border-radius: 6px; font-size: 0.78rem; font-weight: 700; color: #0e7490; text-align: center; background: #f8fafc; cursor: pointer; flex-shrink: 0; }
+        .lcfg-lanes-sel:focus { border-color: #0d9488; outline: none; }
 
         .v-col .hopper-vlabel {
             writing-mode: vertical-rl; text-orientation: mixed;
@@ -1482,10 +1482,6 @@ function lockColHTML(l) {
                 <button class="slot-gear-item" data-slot-key="${l.key}" onclick="toggleSlotHidden('${l.key}',event);closeAllGearMenus();">
                     <span class="gear-eye-icon"></span> <span class="gear-eye-label"></span>
                 </button>
-                <div class="slot-gear-item gear-lanes-row">
-                    <span style="font-size:0.72rem;">แถว</span>
-                    <input type="number" class="gear-lanes-input" value="${lanes}" min="1" max="10" data-lock="${l.key}" onchange="setLockLanes('${l.key}',this.value)" onclick="event.stopPropagation()">
-                </div>
             </div>
         </div>
         <div class="v-col-header" draggable="true" ondragstart="onLockDS(event,'${l.key}')" ondragend="onLockDE(event,'${l.key}')" onclick="tapSelectLock('${l.key}',event)">
@@ -1678,6 +1674,11 @@ function renderLockCfgRows() {
 
             const tierBtnClass = (i > 0 && l.tierBreak) ? 'lcfg-tier-toggle active' : 'lcfg-tier-toggle';
             const tierBtn = i > 0 ? `<button class="${tierBtnClass}" onclick="toggleTierBreak('${zone}',${i})" title="แบ่งชั้น">ชั้น</button>` : '';
+            const lanesVal = l.lanes || 3;
+            const lanesOpts = [1,2,3,4,5,6,7,8].map(n =>
+                `<option value="${n}"${n===lanesVal?' selected':''}>${n}</option>`
+            ).join('');
+
             return tierHtml + `<div class="lcfg-row">
                 <span class="lcfg-key">${i+1}</span>
                 <div class="lcfg-move">
@@ -1686,6 +1687,7 @@ function renderLockCfgRows() {
                 </div>
                 ${tierBtn}
                 <input type="text" value="${l.name}" data-zone="${zone}" data-idx="${i}" onchange="onLockNameChange(this)" placeholder="ชื่อ Lock">
+                <select class="lcfg-lanes-sel" data-zone="${zone}" data-idx="${i}" onchange="onLockLanesChange(this)" title="จำนวนแถว">${lanesOpts}</select>
                 <div class="lcfg-color-sel">
                     <button class="lcfg-color-btn" onclick="toggleColorDD(this,event)" title="เลือกสี">
                         <div class="cdot-preview" style="background:${cur.dot}"></div>
@@ -1713,18 +1715,11 @@ document.addEventListener('click', () => {
     document.querySelectorAll('.lcfg-color-dd.open').forEach(d => d.classList.remove('open'));
 });
 
-function setLockLanes(lockKey, val) {
-    const lanes = Math.max(1, Math.min(10, parseInt(val) || 3));
-    // Update lockConfig directly
-    const allLocks = [...lockConfig.zoneA, ...lockConfig.zoneB];
-    const lock = allLocks.find(l => l.key === lockKey);
-    if (lock) {
-        lock.lanes = lanes;
-        saveLockConfigStorage();
-        buildLayout();
-        save(); renderAll();
-        setupDrop(); setupHeaderDelete();
-    }
+function onLockLanesChange(el) {
+    const zone = el.dataset.zone;
+    const idx = parseInt(el.dataset.idx);
+    const arr = zone === 'A' ? lockCfgTemp.zoneA : lockCfgTemp.zoneB;
+    if (arr[idx]) arr[idx].lanes = parseInt(el.value) || 3;
 }
 
 function toggleTierBreak(zone, idx) {
@@ -1793,12 +1788,18 @@ function moveLockRow(zone, idx, dir) {
 }
 
 function saveLockConfig() {
-    // Read latest names from inputs
+    // Read latest names and lanes from inputs
     document.querySelectorAll('#lockCfgZoneA input, #lockCfgZoneB input').forEach(el => {
         const zone = el.dataset.zone;
         const idx = parseInt(el.dataset.idx);
         const arr = zone === 'A' ? lockCfgTemp.zoneA : lockCfgTemp.zoneB;
         if (arr[idx]) arr[idx].name = el.value.trim() || arr[idx].key;
+    });
+    document.querySelectorAll('.lcfg-lanes-sel').forEach(el => {
+        const zone = el.dataset.zone;
+        const idx = parseInt(el.dataset.idx);
+        const arr = zone === 'A' ? lockCfgTemp.zoneA : lockCfgTemp.zoneB;
+        if (arr[idx]) arr[idx].lanes = parseInt(el.value) || 3;
     });
 
     // Check for duplicate keys
