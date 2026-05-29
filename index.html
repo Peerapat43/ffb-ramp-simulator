@@ -292,16 +292,13 @@
         .stbl th { background: #edf2f7; padding: 5px 8px; text-align: left; font-weight: 600; color: #4a5568; border-bottom: 2px solid #e2e8f0; }
         .stbl td { padding: 5px 8px; border-bottom: 1px solid #f7fafc; }
 
-        /* FIFO per-hopper */
-        .fifo-hopper { margin-bottom: 12px; }
-        .fifo-hopper:last-child { margin-bottom: 0; }
-        .fifo-hdr { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
-        .fifo-hdr-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
-        .fifo-hdr-name { font-weight: 700; font-size: 0.8rem; color: #2d3748; }
-        .fifo-hdr-total { font-size: 0.68rem; color: #a0aec0; margin-left: auto; }
+        /* FIFO global sorted */
+        .fifo-summary { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+        .fifo-stat { font-size: 0.68rem; color: #718096; background: #f7fafc; padding: 3px 8px; border-radius: 5px; }
+        .fifo-stat b { color: #2d3748; }
         .fifo-empty { font-size: 0.72rem; color: #cbd5e0; text-align: center; padding: 6px; }
         .fifo-row {
-            display: flex; align-items: center; gap: 6px; padding: 5px 6px;
+            display: flex; align-items: center; gap: 6px; padding: 5px 8px;
             border-radius: 6px; margin-bottom: 3px; background: #f7fafc;
             transition: background 0.15s;
         }
@@ -315,9 +312,11 @@
         .fifo-num.n2 { background: #dd6b20; }
         .fifo-num.n3 { background: #d69e2e; }
         .fifo-num.nrest { background: #a0aec0; }
-        .fifo-code { font-weight: 700; font-size: 0.78rem; color: #2b6cb0; flex: 1; }
-        .fifo-wt { font-size: 0.7rem; color: #718096; white-space: nowrap; }
-        .fifo-from { font-size: 0.6rem; color: #e53e3e; font-weight: 600; }
+        .fifo-code { font-weight: 700; font-size: 0.78rem; color: #2b6cb0; }
+        .fifo-loc { font-size: 0.62rem; font-weight: 600; padding: 1px 6px; border-radius: 3px; white-space: nowrap; flex-shrink: 0; }
+        .fifo-loc.loc-lock { background: #edf2f7; color: #4a5568; }
+        .fifo-loc.loc-hopper { background: #c6f6d5; color: #276749; }
+        .fifo-wt { font-size: 0.7rem; color: #718096; white-space: nowrap; margin-left: auto; }
         .fifo-btn { padding: 2px 8px; font-size: 0.65rem; background: #fed7d7; color: #c53030; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; flex-shrink: 0; }
         .fifo-btn:hover { background: #feb2b2; }
 
@@ -937,7 +936,7 @@
         </div>
 
         <div class="card">
-            <h3>ลำดับ FIFO (เข้าก่อน-ออกก่อน)</h3>
+            <h3>ลำดับ FIFO (B.### น้อย → ออกก่อน)</h3>
             <div id="fifoPanel"></div>
         </div>
 
@@ -1783,6 +1782,12 @@ function addBatch(e) {
     const loc=document.getElementById('fLocation').value;
     const src=document.getElementById('fSource').value;
     if(!code||!weight||!loc||!src) return;
+    // B.### is mandatory for FIFO sorting
+    if (!/B\.\d+/.test(code)) {
+        toast('กรุณาระบุ B.### ในรหัส Batch (เช่น B.356/SM/30)');
+        document.getElementById('fCode').focus();
+        return;
+    }
     slots[loc].push({ id:Date.now().toString(), code, weight, source:src, fromLock:null, timestamp:new Date().toISOString() });
     logAction('add', code, loc, null, weight);
     save(); renderAll();
@@ -2375,44 +2380,66 @@ function renderLog() {
     }).join('');
 }
 
+function extractBatchNum(code) {
+    const m = code.match(/B\.(\d+)/);
+    return m ? parseInt(m[1]) : 999999;
+}
+
 function renderFIFO() {
     const panel = document.getElementById('fifoPanel');
-    const hops = [
-        { key:'hopperA', name:'Hopper A', color:'#48bb78' },
-        { key:'hopperB', name:'Hopper B', color:'#4299e1' },
-        { key:'hopperC', name:'Hopper C', color:'#9f7aea' }
-    ];
+
+    // Collect ALL batches from ALL slots with location info
+    const allBatches = [];
+    const hopperKeys = ['hopperA','hopperB','hopperC'];
+
+    Object.keys(slots).forEach(slotKey => {
+        const isHopper = hopperKeys.includes(slotKey);
+        slots[slotKey].forEach(b => {
+            if (b.hidden) return;
+            allBatches.push({
+                ...b,
+                slotKey,
+                slotName: NAMES[slotKey] || slotKey,
+                isHopper
+            });
+        });
+    });
+
+    // Sort by B.### number ascending (FIFO: lowest number first)
+    allBatches.sort((a, b) => extractBatchNum(a.code) - extractBatchNum(b.code));
+
+    const totalBatches = allBatches.length;
+    const totalWeight = allBatches.reduce((s, b) => s + b.weight, 0);
+    const inHopper = allBatches.filter(b => b.isHopper).length;
+    const inLock = totalBatches - inHopper;
 
     let html = '';
-    hops.forEach(h => {
-        const arr = [...slots[h.key]];
-        const total = arr.reduce((s,b)=>s+(b.hidden?0:b.weight),0);
 
-        html += `<div class="fifo-hopper">`;
-        html += `<div class="fifo-hdr">
-            <div class="fifo-hdr-dot" style="background:${h.color}"></div>
-            <span class="fifo-hdr-name">${h.name}</span>
-            <span class="fifo-hdr-total">${arr.length} Batch &bull; ${total.toFixed(2)}T</span>
-        </div>`;
+    // Summary stats
+    html += `<div class="fifo-summary">
+        <div class="fifo-stat"><b>${totalBatches}</b> Batch</div>
+        <div class="fifo-stat"><b>${totalWeight.toFixed(2)}</b>T</div>
+        <div class="fifo-stat">Lock <b>${inLock}</b></div>
+        <div class="fifo-stat">Hopper <b>${inHopper}</b></div>
+    </div>`;
 
-        if (!arr.length) {
-            html += `<div class="fifo-empty">ว่าง</div>`;
-        } else {
-            arr.forEach((b, i) => {
-                const numClass = i===0?'n1':i===1?'n2':i===2?'n3':'nrest';
-                const isNext = i===0;
-                const from = b.fromLock ? `<span class="fifo-from">← ${NAMES[b.fromLock]}</span>` : '';
-                html += `<div class="fifo-row${isNext?' fifo-next':''}">
-                    <div class="fifo-num ${numClass}">${i+1}</div>
-                    <span class="fifo-code">${b.code}</span>
-                    <span class="fifo-wt">${b.weight}T</span>
-                    ${from}
-                    ${isNext?`<button class="fifo-btn" onclick="consumeBatch('${h.key}','${b.id}')">ผลิต</button>`:''}
-                </div>`;
-            });
-        }
-        html += `</div>`;
-    });
+    if (!allBatches.length) {
+        html += `<div class="fifo-empty">ไม่มี Batch</div>`;
+    } else {
+        allBatches.forEach((b, i) => {
+            const numClass = i===0?'n1':i===1?'n2':i===2?'n3':'nrest';
+            const isNext = i === 0 && b.isHopper;
+            const locClass = b.isHopper ? 'loc-hopper' : 'loc-lock';
+            const canProduce = b.isHopper && i === allBatches.findIndex(x => x.isHopper);
+            html += `<div class="fifo-row${isNext?' fifo-next':''}">
+                <div class="fifo-num ${numClass}">${i+1}</div>
+                <span class="fifo-code">${b.code}</span>
+                <span class="fifo-loc ${locClass}">${b.slotName}</span>
+                <span class="fifo-wt">${b.weight}T</span>
+                ${canProduce?`<button class="fifo-btn" onclick="consumeBatch('${b.slotKey}','${b.id}')">ผลิต</button>`:''}
+            </div>`;
+        });
+    }
 
     panel.innerHTML = html;
 }
