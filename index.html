@@ -2645,71 +2645,56 @@ function renderSummary() {
 }
 
 function loadSampleData() {
-    // Reset to default lock config
-    lockConfig = {
-        zoneA: [
-            { key:'L1', name:'L1' }, { key:'L2', name:'L2' },
-            { key:'L3', name:'L3' }, { key:'L4', name:'L4' }
-        ],
-        zoneB: [
-            { key:'L7', name:'L7' }, { key:'L6', name:'L6' }, { key:'L5', name:'L5' }
-        ]
-    };
-    saveLockConfigStorage();
+    // Use current lockConfig (preserve layout, colors, names)
+    const aKeys = lockConfig.zoneA.map(l => l.key);
+    const bKeys = lockConfig.zoneB.map(l => l.key);
+
     rebuildSlotsAndNames();
-    slots = {
+
+    // Sample batch data distributed across current locks
+    const sampleBatches = {
         hopperA: [
-            { id:'a1', code:'B.351/VD/30', weight:170, source:'buying', fromLock:'L1', timestamp:'2026-05-13T06:00:00Z' },
-            { id:'a2', code:'B.253/RS/30', weight:120, source:'branch', fromLock:'L3', timestamp:'2026-05-13T06:30:00Z' },
-            { id:'a3', code:'B.356', weight:10, source:'sub', fromLock:null, timestamp:'2026-05-13T07:00:00Z' }
+            { id:'a1', code:'B.351/VD/30', weight:170, source:'buying', fromLock:aKeys[0]||'L1', timestamp:'2026-05-29T06:00:00Z' },
+            { id:'a2', code:'B.253/RS/30', weight:120, source:'branch', fromLock:aKeys[2]||'L3', timestamp:'2026-05-29T06:30:00Z' },
+            { id:'a3', code:'B.356', weight:10, source:'sub', fromLock:null, timestamp:'2026-05-29T07:00:00Z' }
         ],
         hopperB: [
-            { id:'b1', code:'B.349/B/20', weight:20, source:'buying', fromLock:'L7', timestamp:'2026-05-13T06:10:00Z' },
-            { id:'b2', code:'B.352/B/30', weight:120, source:'branch', fromLock:'L5', timestamp:'2026-05-13T06:40:00Z' }
+            { id:'b1', code:'B.349/B/20', weight:20, source:'buying', fromLock:bKeys[0]||'L7', timestamp:'2026-05-29T06:10:00Z' },
+            { id:'b2', code:'B.352/B/30', weight:120, source:'branch', fromLock:bKeys[2]||'L5', timestamp:'2026-05-29T06:40:00Z' }
         ],
         hopperC: [
-            { id:'c1', code:'B.352/VD/30', weight:30, source:'buying', fromLock:'L2', timestamp:'2026-05-13T06:15:00Z' },
-            { id:'c2', code:'B.353/RS/30', weight:190, source:'branch', fromLock:null, timestamp:'2026-05-13T06:45:00Z' },
-            { id:'c3', code:'B.355', weight:100, source:'sub', fromLock:'L4', timestamp:'2026-05-13T07:10:00Z' }
-        ],
-        L1: [
-            { id:'l1a', code:'B.351', weight:30, source:'buying', fromLock:null, timestamp:'2026-05-12T10:00:00Z' },
-            { id:'l1b', code:'B.354', weight:20, source:'sub', fromLock:null, timestamp:'2026-05-13T08:00:00Z' }
-        ],
-        L2: [
-            { id:'l2a', code:'B.352', weight:28, source:'branch', fromLock:null, timestamp:'2026-05-12T11:00:00Z' },
-            { id:'l2b', code:'B.354', weight:12, source:'buying', fromLock:null, timestamp:'2026-05-13T08:30:00Z' }
-        ],
-        L3: [
-            { id:'l3a', code:'B.354', weight:10, source:'buying', fromLock:null, timestamp:'2026-05-12T12:00:00Z' },
-            { id:'l3b', code:'B.355', weight:12, source:'sub', fromLock:null, timestamp:'2026-05-13T09:00:00Z' },
-            { id:'l3c', code:'B.354', weight:10, source:'branch', fromLock:null, timestamp:'2026-05-13T09:30:00Z' }
-        ],
-        L4: [
-            { id:'l4a', code:'B.352', weight:12, source:'buying', fromLock:null, timestamp:'2026-05-13T09:00:00Z' },
-            { id:'l4b', code:'B.356', weight:12, source:'sub', fromLock:null, timestamp:'2026-05-13T10:00:00Z' }
-        ],
-        L5: [
-            { id:'l5a', code:'B.356', weight:90, source:'buying', fromLock:null, timestamp:'2026-05-13T07:00:00Z' },
-            { id:'l5b', code:'B.357', weight:99, source:'branch', fromLock:null, timestamp:'2026-05-13T08:00:00Z' }
-        ],
-        L6: [
-            { id:'l6a', code:'B.351', weight:30, source:'buying', fromLock:null, timestamp:'2026-05-13T07:30:00Z' },
-            { id:'l6b', code:'B.358', weight:20, source:'sub', fromLock:null, timestamp:'2026-05-13T09:00:00Z' }
-        ],
-        L7: [
-            { id:'l7a', code:'B.351', weight:20, source:'buying', fromLock:null, timestamp:'2026-05-13T06:00:00Z' },
-            { id:'l7b', code:'B.359', weight:16, source:'branch', fromLock:null, timestamp:'2026-05-13T09:30:00Z' },
-            { id:'l7c', code:'B.354', weight:10, source:'sub', fromLock:null, timestamp:'2026-05-13T10:00:00Z' }
+            { id:'c1', code:'B.352/VD/30', weight:30, source:'buying', fromLock:aKeys[1]||'L2', timestamp:'2026-05-29T06:15:00Z' },
+            { id:'c2', code:'B.353/RS/30', weight:190, source:'branch', fromLock:null, timestamp:'2026-05-29T06:45:00Z' },
+            { id:'c3', code:'B.355', weight:100, source:'sub', fromLock:aKeys[3]||'L4', timestamp:'2026-05-29T07:10:00Z' }
         ]
     };
+
+    // Distribute lock data across current lock keys
+    const lockData = [
+        [{ id:'l1a', code:'B.351', weight:30, source:'buying' }, { id:'l1b', code:'B.354', weight:20, source:'sub' }],
+        [{ id:'l2a', code:'B.352', weight:28, source:'branch' }, { id:'l2b', code:'B.354', weight:12, source:'buying' }],
+        [{ id:'l3a', code:'B.354', weight:10, source:'buying' }, { id:'l3b', code:'B.355', weight:12, source:'sub' }, { id:'l3c', code:'B.354', weight:10, source:'branch' }],
+        [{ id:'l4a', code:'B.352', weight:12, source:'buying' }, { id:'l4b', code:'B.356', weight:12, source:'sub' }],
+        [{ id:'l5a', code:'B.356', weight:90, source:'buying' }, { id:'l5b', code:'B.357', weight:99, source:'branch' }],
+        [{ id:'l6a', code:'B.351', weight:30, source:'buying' }, { id:'l6b', code:'B.358', weight:20, source:'sub' }],
+        [{ id:'l7a', code:'B.351', weight:20, source:'buying' }, { id:'l7b', code:'B.359', weight:16, source:'branch' }, { id:'l7c', code:'B.354', weight:10, source:'sub' }]
+    ];
+    const allKeys = [...aKeys, ...bKeys];
+
+    // Build slots: hoppers + locks
+    slots = { ...sampleBatches };
+    allKeys.forEach((key, i) => {
+        const data = lockData[i % lockData.length] || [];
+        slots[key] = data.map(b => ({ ...b, fromLock: null, timestamp: new Date().toISOString() }));
+    });
+    // Ensure all lock keys have a slot
+    allKeys.forEach(k => { if (!slots[k]) slots[k] = []; });
+
     moveHistory = [
-        { type:'move', batch:'B.351/VD/30', from:'L1', to:'hopperA', weight:170, time:'06:00' },
-        { type:'move', batch:'B.253/RS/30', from:'L3', to:'hopperA', weight:120, time:'06:30' },
-        { type:'move', batch:'B.349/B/20', from:'L7', to:'hopperB', weight:20, time:'06:10' },
-        { type:'move', batch:'B.352/B/30', from:'L5', to:'hopperB', weight:120, time:'06:40' },
-        { type:'move', batch:'B.352/VD/30', from:'L2', to:'hopperC', weight:30, time:'06:15' },
-        { type:'move', batch:'B.355', from:'L4', to:'hopperC', weight:100, time:'07:10' },
+        { type:'move', batch:'B.351/VD/30', from:aKeys[0]||'L1', to:'hopperA', weight:170, time:'06:00' },
+        { type:'move', batch:'B.253/RS/30', from:aKeys[2]||'L3', to:'hopperA', weight:120, time:'06:30' },
+        { type:'move', batch:'B.349/B/20', from:bKeys[0]||'L7', to:'hopperB', weight:20, time:'06:10' },
+        { type:'move', batch:'B.352/B/30', from:bKeys[2]||'L5', to:'hopperB', weight:120, time:'06:40' },
     ];
     buildLayout();
     save(); renderAll();
