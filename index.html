@@ -3801,19 +3801,21 @@ function showTourStep() {
         tourTooltip.style.left = tipLeft + 'px';
         tourTooltip.style.width = tipW + 'px';
 
-        // If element is taller than 60% of viewport, center tooltip on screen
         const vh = window.innerHeight;
+        tourTooltip.style.top = 'auto';
+        tourTooltip.style.bottom = 'auto';
+
         if (rect.height > vh * 0.5) {
+            // Large element: center tooltip on screen
             tourTooltip.style.top = (vh / 2 - 80) + 'px';
-            tourTooltip.style.bottom = 'auto';
-        } else if (step.pos === 'bottom') {
-            const topPos = Math.min(rect.bottom + pad + 14, vh - 180);
-            tourTooltip.style.top = topPos + 'px';
-            tourTooltip.style.bottom = 'auto';
+        } else if (step.pos === 'top' && rect.top > 200) {
+            // Place above element if there's room
+            const topPos = rect.top - pad - 14;
+            tourTooltip.style.top = Math.max(12, topPos - 160) + 'px';
         } else {
-            const bottomPos = vh - rect.top + pad + 14;
-            tourTooltip.style.top = 'auto';
-            tourTooltip.style.bottom = Math.max(12, bottomPos) + 'px';
+            // Place below element, clamped to viewport
+            const topPos = rect.bottom + pad + 14;
+            tourTooltip.style.top = Math.min(topPos, vh - 180) + 'px';
         }
 
         // Fill content
