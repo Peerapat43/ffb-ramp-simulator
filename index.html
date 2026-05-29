@@ -102,6 +102,9 @@
         }
         .columns-row.layout-vertical .hopper-vlabel { display: none; }
         .columns-row.layout-vertical .slot-gear-wrap { top: 2px; right: 2px; }
+        /* Separated hopper when using vertical lock layout */
+        .hopper-separated { margin-top: 6px; }
+        .hopper-separated .v-col { min-height: 120px; }
 
         /* Shared vertical column style for both locks and hoppers */
         .v-col {
@@ -1315,14 +1318,19 @@ function buildZone(containerId, locks, hopperKey, hopperName, hopperClass, hoppe
     const container = document.getElementById(containerId);
     const zoneKey = hopperKey === 'hopperA' ? 'A' : 'B';
     const layout = lockConfig['layout' + zoneKey] || 'horizontal';
+    const isVertical = layout === 'vertical';
     container.classList.remove('layout-vertical');
-    if (layout === 'vertical') container.classList.add('layout-vertical');
+    if (isVertical) container.classList.add('layout-vertical');
+
+    // Remove any existing separated hopper from previous builds
+    const prevHopper = container.parentElement.querySelector('.hopper-separated-' + hopperKey);
+    if (prevHopper) prevHopper.remove();
+
     let html = '';
 
-    // For Zone A: locks first, then hopper at end
-    // For Zone B: hopper first, then locks
-    if (hopperKey === 'hopperB') {
-        html += hopperColHTML(hopperKey, hopperName, hopperClass, hopperLabel);
+    if (!isVertical) {
+        // Horizontal layout: hopper inside columns-row (original behavior)
+        if (hopperKey === 'hopperB') html += hopperColHTML(hopperKey, hopperName, hopperClass, hopperLabel);
     }
 
     locks.forEach(l => {
@@ -1344,11 +1352,21 @@ function buildZone(containerId, locks, hopperKey, hopperName, hopperClass, hoppe
         </div>`;
     });
 
-    if (hopperKey === 'hopperA') {
-        html += hopperColHTML(hopperKey, hopperName, hopperClass, hopperLabel);
+    if (!isVertical) {
+        // Horizontal layout: hopper inside columns-row
+        if (hopperKey === 'hopperA') html += hopperColHTML(hopperKey, hopperName, hopperClass, hopperLabel);
     }
 
     container.innerHTML = html;
+
+    // Vertical layout: hopper as a separate section outside columns-row
+    if (isVertical) {
+        const hopperDiv = document.createElement('div');
+        hopperDiv.className = 'hopper-separated hopper-separated-' + hopperKey;
+        hopperDiv.innerHTML = hopperColHTML(hopperKey, hopperName, hopperClass, hopperLabel);
+        // Insert hopper after the columns-row
+        container.parentElement.insertBefore(hopperDiv, container.nextSibling);
+    }
 }
 
 function hopperColHTML(key, name, cls, label) {
