@@ -397,13 +397,16 @@
 
         /* EDIT MODAL */
         /* Lock config zones layout */
-        .lock-cfg-zones { display: flex; gap: 12px; }
-        .lock-cfg-zone { flex: 1; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 14px; }
-        .lock-cfg-zone-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #e2e8f0; }
-        .lock-cfg-zone-title { font-weight: 800; font-size: 0.8rem; letter-spacing: 0.3px; }
+        .lock-cfg-zones { display: flex; gap: 0; background: #f4f7fa; border: 1.5px solid #e2e8f0; border-radius: 14px; overflow: hidden; }
+        .lock-cfg-zone { flex: 1; padding: 16px; }
+        .lock-cfg-zone + .lock-cfg-zone { border-left: 1.5px solid #e2e8f0; }
+        .lock-cfg-zone-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #e2e8f0; }
+        .lock-cfg-zone-title { font-weight: 800; font-size: 0.82rem; letter-spacing: 0.3px; }
+        .lock-cfg-zone-sub { font-size: 0.62rem; color: #a0aec0; margin-top: 1px; }
         .lock-cfg-layout-group { display: flex; gap: 3px; background: #edf2f7; border-radius: 6px; padding: 2px; }
         @media (max-width: 600px), (max-height: 500px) {
-            .lock-cfg-zones { flex-direction: column; gap: 10px; }
+            .lock-cfg-zones { flex-direction: column; }
+            .lock-cfg-zone + .lock-cfg-zone { border-left: none; border-top: 1.5px solid #e2e8f0; }
         }
 
         .edit-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 1100; align-items: flex-start; justify-content: center; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 20px 0; }
@@ -1139,20 +1142,18 @@
 
 <!-- LOCK CONFIG MODAL -->
 <div class="edit-modal" id="lockConfigModal">
-    <div class="edit-box" style="max-width:680px;">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;">
-            <div style="width:36px;height:36px;background:linear-gradient(135deg,#1e3a5f,#2d5a87);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.1rem;">&#9881;</div>
-            <div>
-                <h3 style="margin:0;font-size:1.05rem;color:#1a202c;">Lock Configuration</h3>
-                <div style="font-size:0.7rem;color:#a0aec0;">จัดการ Lock แต่ละ Zone</div>
-            </div>
+    <div class="edit-box" style="max-width:700px;">
+        <div style="text-align:center;margin-bottom:18px;">
+            <div style="display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;background:linear-gradient(135deg,#1e3a5f,#2d5a87);border-radius:12px;color:#fff;font-size:1.2rem;margin-bottom:6px;">&#9881;</div>
+            <h3 style="margin:0;font-size:1.08rem;color:#1a202c;font-weight:800;">Lock Configuration</h3>
+            <div style="font-size:0.7rem;color:#a0aec0;">จัดการ Lock แต่ละ Zone</div>
         </div>
         <div class="lock-cfg-zones">
-            <div class="lock-cfg-zone" style="border-color:#fed7d7;">
+            <div class="lock-cfg-zone">
                 <div class="lock-cfg-zone-header">
                     <div>
                         <div class="lock-cfg-zone-title" style="color:#c53030;">Zone A</div>
-                        <div style="font-size:0.65rem;color:#a0aec0;">ฝั่ง 1,000 ตัน</div>
+                        <div class="lock-cfg-zone-sub">ฝั่ง 1,000 ตัน</div>
                     </div>
                     <div class="lock-cfg-layout-group">
                         <button class="lcfg-layout-btn" id="layoutA-horizontal" onclick="setZoneLayout('A','horizontal')">รูปแบบ A</button>
@@ -1162,11 +1163,11 @@
                 <div id="lockCfgZoneA"></div>
                 <button class="lcfg-add-btn" onclick="addLockRow('A')">+ เพิ่ม Lock</button>
             </div>
-            <div class="lock-cfg-zone" style="border-color:#fefcbf;">
+            <div class="lock-cfg-zone">
                 <div class="lock-cfg-zone-header">
                     <div>
                         <div class="lock-cfg-zone-title" style="color:#975a16;">Zone B</div>
-                        <div style="font-size:0.65rem;color:#a0aec0;">ฝั่ง Boiler</div>
+                        <div class="lock-cfg-zone-sub">ฝั่ง Boiler</div>
                     </div>
                     <div class="lock-cfg-layout-group">
                         <button class="lcfg-layout-btn" id="layoutB-horizontal" onclick="setZoneLayout('B','horizontal')">รูปแบบ A</button>
@@ -1177,7 +1178,7 @@
                 <button class="lcfg-add-btn" onclick="addLockRow('B')">+ เพิ่ม Lock</button>
             </div>
         </div>
-        <div style="margin-top:14px;padding:10px 12px;background:#f0f4f8;border-radius:8px;font-size:0.68rem;color:#718096;line-height:1.5;">
+        <div style="margin-top:14px;padding:10px 14px;background:#edf1f7;border-radius:10px;font-size:0.68rem;color:#718096;line-height:1.5;text-align:center;">
             &#9432; ตั้งชื่อ Lock ได้อิสระ | &#9650;&#9660; เรียงลำดับ | ลบ Lock ที่มี Batch จะย้ายไป Lock แรก
         </div>
         <div class="edit-actions" style="margin-top:16px;">
