@@ -495,18 +495,26 @@
         .lcfg-tier-break { display: flex; align-items: center; gap: 6px; margin: 6px 0 2px; padding: 0 4px; }
         .lcfg-tier-line { flex: 1; height: 1px; background: #94a3b8; }
         .lcfg-tier-label { font-size: 0.62rem; color: #64748b; font-weight: 700; white-space: nowrap; letter-spacing: 0.3px; }
+        .lcfg-tier-name { border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px 8px; font-size: 0.65rem; font-weight: 700; color: #475569; text-align: center; width: 100px; background: #f8fafc; }
+        .lcfg-tier-name:focus { border-color: #0d9488; outline: none; background: #fff; }
         .lcfg-tier-btn { background: none; border: 1px solid #e2e8f0; color: #94a3b8; font-size: 0.58rem; padding: 2px 6px; border-radius: 4px; cursor: pointer; flex-shrink: 0; transition: all 0.15s; }
         .lcfg-tier-btn:hover { border-color: #94a3b8; color: #64748b; background: #f1f5f9; }
         .lcfg-tier-toggle { background: none; border: 1px dashed #cbd5e0; color: #a0aec0; font-size: 0.6rem; padding: 1px 5px; border-radius: 3px; cursor: pointer; flex-shrink: 0; }
         .lcfg-tier-toggle.active { border-style: solid; border-color: #0d9488; color: #0d9488; background: #f0fdfa; }
-        /* Tier divider in ramp view (Pattern B) */
-        .tier-divider { display: flex; align-items: center; gap: 6px; padding: 2px 0; }
-        .tier-divider-line { flex: 1; height: 1.5px; background: linear-gradient(90deg, #94a3b8, transparent); }
-        .tier-divider-label { font-size: 0.62rem; color: #64748b; font-weight: 700; white-space: nowrap; background: #e8edf2; padding: 1px 8px; border-radius: 3px; }
-        /* Tiered Pattern A: columns grouped into rows */
-        .locks-tiered-wrap { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; }
-        .tier-label-bar { padding: 2px 0; }
-        .tier-row { display: flex; gap: 6px; min-height: 160px; }
+        /* Tier container: wraps a group of locks */
+        .tier-container {
+            background: #f1f5f9; border: 1.5px solid #cbd5e1; border-radius: 10px;
+            padding: 6px; position: relative;
+        }
+        .tier-container-label {
+            font-size: 0.65rem; font-weight: 700; color: #475569;
+            padding: 2px 10px; margin-bottom: 4px;
+        }
+        .tier-container-body { display: flex; gap: 4px; }
+        .tier-body-columns { min-height: 160px; }
+        .tier-body-vertical { flex-direction: column; }
+        /* Tiered wraps */
+        .locks-tiered-wrap { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0; }
         /* Lock color dropdown */
         .lcfg-color-sel { position: relative; flex-shrink: 0; }
         .lcfg-color-btn { width: 28px; height: 28px; border-radius: 6px; border: 2px solid #e2e8f0; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; justify-content: center; }
@@ -1428,36 +1436,45 @@ function buildZone(containerId, locks, hopperKey, hopperName, hopperClass, hoppe
         html += hopperColHTML(hopperKey, hopperName, hopperClass, hopperLabel);
     }
 
+    // Split locks into tier groups
+    const tierGroups = [];
+    let currentGroup = { name: locks[0]?.tierName || 'ชั้นที่ 1', locks: [] };
+    locks.forEach((l, idx) => {
+        if (idx > 0 && l.tierBreak) {
+            tierGroups.push(currentGroup);
+            currentGroup = { name: l.tierName || ('ชั้นที่ ' + (tierGroups.length + 2)), locks: [] };
+        }
+        currentGroup.locks.push(l);
+    });
+    if (currentGroup.locks.length) tierGroups.push(currentGroup);
+
     // Build lock HTML based on layout mode
-    if (isVertical) {
-        // Pattern B: horizontal bars stacked vertically
+    if (isVertical && hasTiers) {
+        // Pattern B with tiers: each tier wrapped in a container
         html += '<div class="locks-vertical-wrap">';
-        let tierCount = 1;
-        locks.forEach((l, idx) => {
-            if (idx > 0 && l.tierBreak) {
-                tierCount++;
-                html += `<div class="tier-divider"><div class="tier-divider-line"></div><span class="tier-divider-label">ชั้นที่ ${tierCount}</span><div class="tier-divider-line" style="background:linear-gradient(90deg,transparent,#94a3b8)"></div></div>`;
-            }
-            html += lockColHTML(l);
+        tierGroups.forEach(g => {
+            html += `<div class="tier-container">`;
+            html += `<div class="tier-container-label">${g.name}</div>`;
+            html += `<div class="tier-container-body tier-body-vertical">`;
+            g.locks.forEach(l => { html += lockColHTML(l); });
+            html += `</div></div>`;
         });
         html += '</div>';
+    } else if (isVertical) {
+        // Pattern B: no tiers
+        html += '<div class="locks-vertical-wrap">';
+        locks.forEach(l => { html += lockColHTML(l); });
+        html += '</div>';
     } else if (hasTiers) {
-        // Pattern A with tiers: columns grouped into rows
+        // Pattern A with tiers: each tier wrapped in a container
         html += '<div class="locks-tiered-wrap">';
-        let tierCount = 1;
-        let tierOpen = false;
-        locks.forEach((l, idx) => {
-            if (idx === 0 || l.tierBreak) {
-                if (tierOpen) html += '</div>'; // close previous tier row
-                if (idx > 0) tierCount++;
-                const label = tierCount > 1 ? `ชั้นที่ ${tierCount}` : 'ชั้นที่ 1';
-                html += `<div class="tier-label-bar"><span class="tier-divider-label">${label}</span></div>`;
-                html += '<div class="tier-row">';
-                tierOpen = true;
-            }
-            html += lockColHTML(l);
+        tierGroups.forEach(g => {
+            html += `<div class="tier-container">`;
+            html += `<div class="tier-container-label">${g.name}</div>`;
+            html += `<div class="tier-container-body tier-body-columns">`;
+            g.locks.forEach(l => { html += lockColHTML(l); });
+            html += `</div></div>`;
         });
-        if (tierOpen) html += '</div>'; // close last tier row
         html += '</div>';
     } else {
         // Pattern A: plain columns side by side (no tiers)
@@ -1646,7 +1663,14 @@ function renderLockCfgRows() {
         const arr = zone === 'A' ? lockCfgTemp.zoneA : lockCfgTemp.zoneB;
         const container = document.getElementById(`lockCfgZone${zone}`);
         let tierNum = 1;
-        container.innerHTML = arr.map((l, i) => {
+        const hasTierBreaks = arr.some(l => l.tierBreak);
+        // First tier name header (only if tiers exist)
+        const firstTierHtml = hasTierBreaks ? `<div class="lcfg-tier-break" style="margin-bottom:4px;">
+            <div class="lcfg-tier-line"></div>
+            <input type="text" class="lcfg-tier-name" value="${arr[0]?.tierName || 'ชั้นที่ 1'}" data-zone="${zone}" data-idx="0" onchange="onTierNameChange(this)" placeholder="ชื่อชั้น 1">
+            <div class="lcfg-tier-line"></div>
+        </div>` : '';
+        container.innerHTML = firstTierHtml + arr.map((l, i) => {
             const curColor = l.color || 'slate';
             const cur = LOCK_COLORS.find(c => c.id === curColor) || LOCK_COLORS[0];
             const colorDots = LOCK_COLORS.map(c =>
@@ -1657,9 +1681,10 @@ function renderLockCfgRows() {
             let tierHtml = '';
             if (i > 0 && l.tierBreak) {
                 tierNum++;
+                const tName = l.tierName || ('ชั้นที่ ' + tierNum);
                 tierHtml = `<div class="lcfg-tier-break">
                     <div class="lcfg-tier-line"></div>
-                    <span class="lcfg-tier-label">ชั้นที่ ${tierNum}</span>
+                    <input type="text" class="lcfg-tier-name" value="${tName}" data-zone="${zone}" data-idx="${i}" onchange="onTierNameChange(this)" placeholder="ชื่อชั้น">
                     <div class="lcfg-tier-line"></div>
                 </div>`;
             }
@@ -1734,6 +1759,13 @@ function toggleLockHiddenCfg(lockKey, btn) {
         if (arr[idx]) arr[idx].name = el.value.trim() || arr[idx].key;
     });
     renderLockCfgRows();
+}
+
+function onTierNameChange(el) {
+    const zone = el.dataset.zone;
+    const idx = parseInt(el.dataset.idx);
+    const arr = zone === 'A' ? lockCfgTemp.zoneA : lockCfgTemp.zoneB;
+    if (arr[idx]) arr[idx].tierName = el.value.trim();
 }
 
 function toggleTierBreak(zone, idx) {
@@ -1814,6 +1846,12 @@ function saveLockConfig() {
         const idx = parseInt(el.dataset.idx);
         const arr = zone === 'A' ? lockCfgTemp.zoneA : lockCfgTemp.zoneB;
         if (arr[idx]) arr[idx].lanes = parseInt(el.value) || 3;
+    });
+    document.querySelectorAll('.lcfg-tier-name').forEach(el => {
+        const zone = el.dataset.zone;
+        const idx = parseInt(el.dataset.idx);
+        const arr = zone === 'A' ? lockCfgTemp.zoneA : lockCfgTemp.zoneB;
+        if (arr[idx]) arr[idx].tierName = el.value.trim();
     });
 
     // Check for duplicate keys
