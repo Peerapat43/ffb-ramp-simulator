@@ -315,8 +315,6 @@
         .fifo-num.nrest { background: #a0aec0; }
         .fifo-code { font-weight: 700; font-size: 0.78rem; color: #0e7490; }
         .fifo-loc { font-size: 0.62rem; font-weight: 600; padding: 1px 6px; border-radius: 3px; white-space: nowrap; flex-shrink: 0; }
-        .fifo-loc.loc-lock { background: #edf2f7; color: #4a5568; }
-        .fifo-loc.loc-hopper { background: #c6f6d5; color: #276749; }
         .fifo-wt { font-size: 0.7rem; color: #718096; white-space: nowrap; margin-left: auto; }
         .fifo-btn { padding: 2px 8px; font-size: 0.65rem; background: #fed7d7; color: #c53030; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; flex-shrink: 0; }
         .fifo-btn:hover { background: #feb2b2; }
@@ -2490,18 +2488,32 @@ function renderFIFO() {
         <div class="fifo-stat">Hopper <b>${inHopper}</b></div>
     </div>`;
 
+    // Build lock color lookup from lockConfig
+    const lockColorMap = {};
+    [...lockConfig.zoneA, ...lockConfig.zoneB].forEach(l => {
+        const lc = LOCK_COLORS.find(c => c.id === (l.color||'slate')) || LOCK_COLORS[0];
+        lockColorMap[l.key] = lc;
+    });
+
     if (!allBatches.length) {
         html += `<div class="fifo-empty">ไม่มี Batch</div>`;
     } else {
         allBatches.forEach((b, i) => {
             const numClass = i===0?'n1':i===1?'n2':i===2?'n3':'nrest';
             const isNext = i === 0 && b.isHopper;
-            const locClass = b.isHopper ? 'loc-hopper' : 'loc-lock';
             const canProduce = b.isHopper && i === allBatches.findIndex(x => x.isHopper);
+            let locStyle = '';
+            if (b.isHopper) {
+                locStyle = 'background:#d1fae5;color:#065f46';
+            } else {
+                const lc = lockColorMap[b.slotKey];
+                if (lc) locStyle = `background:${lc.header};color:${lc.dot}`;
+                else locStyle = 'background:#edf2f7;color:#4a5568';
+            }
             html += `<div class="fifo-row${isNext?' fifo-next':''}">
                 <div class="fifo-num ${numClass}">${i+1}</div>
                 <span class="fifo-code">${b.code}</span>
-                <span class="fifo-loc ${locClass}">${b.slotName}</span>
+                <span class="fifo-loc" style="${locStyle}">${b.slotName}</span>
                 <span class="fifo-wt">${b.weight}T</span>
                 ${canProduce?`<button class="fifo-btn" onclick="consumeBatch('${b.slotKey}','${b.id}')">ผลิต</button>`:''}
             </div>`;
