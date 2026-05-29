@@ -430,12 +430,16 @@
 
         /* Lock config rows */
         .lcfg-row {
-            display: flex; align-items: center; gap: 6px; margin-bottom: 6px;
+            display: flex; align-items: center; gap: 4px; margin-bottom: 5px;
             padding: 6px 8px; background: #f7fafc; border-radius: 6px; border: 1px solid #e2e8f0;
         }
-        .lcfg-row .lcfg-key { font-size: 0.7rem; color: #a0aec0; width: 32px; text-align: center; flex-shrink: 0; }
-        .lcfg-row input { flex: 1; padding: 5px 8px; border: 1.5px solid #e2e8f0; border-radius: 5px; font-size: 0.82rem; font-weight: 600; }
+        .lcfg-row .lcfg-key { font-size: 0.65rem; color: #a0aec0; width: 24px; text-align: center; flex-shrink: 0; }
+        .lcfg-row input { flex: 1; padding: 5px 8px; border: 1.5px solid #e2e8f0; border-radius: 5px; font-size: 0.82rem; font-weight: 600; min-width: 0; }
         .lcfg-row input:focus { border-color: #4299e1; outline: none; }
+        .lcfg-move { display: flex; flex-direction: column; gap: 1px; flex-shrink: 0; }
+        .lcfg-move button { background: #edf2f7; border: none; color: #718096; border-radius: 3px; width: 22px; height: 16px; cursor: pointer; font-size: 0.6rem; line-height: 1; display: flex; align-items: center; justify-content: center; }
+        .lcfg-move button:hover { background: #bee3f8; color: #2b6cb0; }
+        .lcfg-move button:disabled { opacity: 0.3; cursor: default; }
         .lcfg-del { background: #fed7d7; border: none; color: #c53030; border-radius: 4px; width: 24px; height: 24px; cursor: pointer; font-size: 0.8rem; flex-shrink: 0; }
         .lcfg-del:hover { background: #fc8181; color: #fff; }
 
@@ -1113,7 +1117,7 @@
             </div>
         </div>
         <div style="margin-top:12px;padding:8px;background:#f7fafc;border-radius:6px;font-size:0.7rem;color:#718096;">
-            &#9432; เปลี่ยนชื่อ Lock ได้ตามต้องการ เพิ่ม/ลบ Lock ได้ (ลบ Lock ที่มี Batch จะย้ายไป Lock แรก)
+            &#9432; ตั้งชื่อ Lock ได้อิสระ (เช่น "25/05/A", "กองกำปง") | &#9650;&#9660; เรียงลำดับ | ลบ Lock ที่มี Batch จะย้ายไป Lock แรก
         </div>
         <div class="edit-actions">
             <button class="btn btn-close" onclick="closeLockConfig()">ยกเลิก</button>
@@ -1436,9 +1440,13 @@ function renderLockCfgRows() {
         const arr = zone === 'A' ? lockCfgTemp.zoneA : lockCfgTemp.zoneB;
         const container = document.getElementById(`lockCfgZone${zone}`);
         container.innerHTML = arr.map((l, i) => `<div class="lcfg-row">
-            <span class="lcfg-key">#${i+1}</span>
-            <input type="text" value="${l.name}" data-zone="${zone}" data-idx="${i}" onchange="onLockNameChange(this)" placeholder="ชื่อ Lock">
-            <button class="lcfg-del" onclick="removeLockRow('${zone}',${i})" title="ลบ Lock">✕</button>
+            <span class="lcfg-key">${i+1}</span>
+            <div class="lcfg-move">
+                <button onclick="moveLockRow('${zone}',${i},-1)" ${i===0?'disabled':''} title="ขึ้น">&#9650;</button>
+                <button onclick="moveLockRow('${zone}',${i},1)" ${i===arr.length-1?'disabled':''} title="ลง">&#9660;</button>
+            </div>
+            <input type="text" value="${l.name}" data-zone="${zone}" data-idx="${i}" onchange="onLockNameChange(this)" placeholder="ชื่อ Lock เช่น 25/05/A">
+            <button class="lcfg-del" onclick="removeLockRow('${zone}',${i})" title="ลบ Lock">&#10005;</button>
         </div>`).join('') || '<div style="color:#cbd5e0;font-size:0.75rem;text-align:center;padding:8px;">ไม่มี Lock</div>';
     });
 }
@@ -1465,6 +1473,20 @@ function addLockRow(zone) {
 function removeLockRow(zone, idx) {
     const arr = zone === 'A' ? lockCfgTemp.zoneA : lockCfgTemp.zoneB;
     arr.splice(idx, 1);
+    renderLockCfgRows();
+}
+
+function moveLockRow(zone, idx, dir) {
+    // Save current input values before moving
+    document.querySelectorAll(`#lockCfgZone${zone} input`).forEach(el => {
+        const i = parseInt(el.dataset.idx);
+        const arr = zone === 'A' ? lockCfgTemp.zoneA : lockCfgTemp.zoneB;
+        if (arr[i]) arr[i].name = el.value.trim() || arr[i].key;
+    });
+    const arr = zone === 'A' ? lockCfgTemp.zoneA : lockCfgTemp.zoneB;
+    const newIdx = idx + dir;
+    if (newIdx < 0 || newIdx >= arr.length) return;
+    [arr[idx], arr[newIdx]] = [arr[newIdx], arr[idx]];
     renderLockCfgRows();
 }
 
