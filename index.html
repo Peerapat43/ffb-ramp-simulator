@@ -118,8 +118,9 @@
 
         /* Lock column */
         .v-col.lock-style { background: #fff; border: 2px solid #e2e8f0; }
-        .v-col.lock-style.has-batch { background: #fefce8; border-color: #facc15; }
-        .v-col.lock-style.empty { background: #f7fafc; border-style: dashed; }
+        .v-col.lock-style.has-batch { border-color: var(--lock-color, #facc15); background: var(--lock-bg, #fefce8); }
+        .v-col.lock-style.empty { background: #f7fafc; border-style: dashed; border-color: var(--lock-border-empty, #e2e8f0); }
+        .v-col.lock-style .v-col-header { background: var(--lock-header, transparent); }
         .v-col.lock-style.drag-over { box-shadow: 0 0 0 3px #ecc94b, 0 0 16px rgba(236,201,75,0.3); }
 
         /* Hopper A vertical column */
@@ -483,6 +484,11 @@
         .lcfg-layout-btn.active { background: #fff; color: #0f766e; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         .lcfg-add-btn { width: 100%; margin-top: 8px; background: none; border: 1.5px dashed #cbd5e0; color: #718096; font-size: 0.78rem; padding: 8px; border-radius: 8px; cursor: pointer; transition: all 0.15s; font-weight: 600; }
         .lcfg-add-btn:hover { border-color: #4299e1; color: #0e7490; background: #ebf8ff; }
+        /* Lock color picker */
+        .lcfg-colors { display: flex; gap: 3px; flex-shrink: 0; align-items: center; }
+        .lcfg-cdot { width: 18px; height: 18px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: all 0.15s; flex-shrink: 0; }
+        .lcfg-cdot:hover { transform: scale(1.2); }
+        .lcfg-cdot.active { border-color: #1a202c; box-shadow: 0 0 0 2px #fff, 0 0 0 3px #1a202c; }
 
         @media (max-width: 1200px) {
             .main { flex-direction: column; }
@@ -1360,7 +1366,9 @@ function buildZone(containerId, locks, hopperKey, hopperName, hopperClass, hoppe
     if (isVertical) html += '<div class="locks-vertical-wrap">';
 
     locks.forEach(l => {
-        html += `<div class="v-col lock-style empty${hiddenSlots.has(l.key)?' slot-hidden':''}" id="drop-${l.key}" data-slot="${l.key}">
+        const lc = LOCK_COLORS.find(c => c.id === (l.color||'slate')) || LOCK_COLORS[0];
+        const cssVars = `--lock-color:${lc.border};--lock-bg:${lc.bg};--lock-header:${lc.header};--lock-border-empty:${lc.borderEmpty}`;
+        html += `<div class="v-col lock-style empty${hiddenSlots.has(l.key)?' slot-hidden':''}" id="drop-${l.key}" data-slot="${l.key}" style="${cssVars}">
             <div class="slot-gear-wrap" id="gear-${l.key}">
                 <button class="slot-gear-btn" onclick="toggleGearMenu('${l.key}',event)">&#9881;</button>
                 <div class="slot-gear-menu">
@@ -1431,6 +1439,17 @@ function updateLocationDropdowns() {
 }
 
 // ========= LOCK CONFIG MODAL =========
+const LOCK_COLORS = [
+    { id:'slate',  dot:'#94a3b8', header:'#f1f5f9', border:'#cbd5e1', bg:'#f8fafc', borderEmpty:'#e2e8f0' },
+    { id:'teal',   dot:'#14b8a6', header:'#ccfbf1', border:'#14b8a6', bg:'#f0fdfa', borderEmpty:'#99f6e4' },
+    { id:'blue',   dot:'#3b82f6', header:'#dbeafe', border:'#3b82f6', bg:'#eff6ff', borderEmpty:'#bfdbfe' },
+    { id:'indigo', dot:'#6366f1', header:'#e0e7ff', border:'#6366f1', bg:'#eef2ff', borderEmpty:'#c7d2fe' },
+    { id:'purple', dot:'#a855f7', header:'#f3e8ff', border:'#a855f7', bg:'#faf5ff', borderEmpty:'#e9d5ff' },
+    { id:'pink',   dot:'#ec4899', header:'#fce7f3', border:'#ec4899', bg:'#fdf2f8', borderEmpty:'#fbcfe8' },
+    { id:'orange', dot:'#f97316', header:'#ffedd5', border:'#f97316', bg:'#fff7ed', borderEmpty:'#fed7aa' },
+    { id:'amber',  dot:'#f59e0b', header:'#fef3c7', border:'#f59e0b', bg:'#fffbeb', borderEmpty:'#fde68a' },
+    { id:'green',  dot:'#22c55e', header:'#dcfce7', border:'#22c55e', bg:'#f0fdf4', borderEmpty:'#bbf7d0' }
+];
 let lockCfgTemp = { zoneA: [], zoneB: [] };
 let lockNextId = 100;
 
@@ -1537,16 +1556,35 @@ function renderLockCfgRows() {
     ['A','B'].forEach(zone => {
         const arr = zone === 'A' ? lockCfgTemp.zoneA : lockCfgTemp.zoneB;
         const container = document.getElementById(`lockCfgZone${zone}`);
-        container.innerHTML = arr.map((l, i) => `<div class="lcfg-row">
-            <span class="lcfg-key">${i+1}</span>
-            <div class="lcfg-move">
-                <button onclick="moveLockRow('${zone}',${i},-1)" ${i===0?'disabled':''} title="ขึ้น">&#9650;</button>
-                <button onclick="moveLockRow('${zone}',${i},1)" ${i===arr.length-1?'disabled':''} title="ลง">&#9660;</button>
-            </div>
-            <input type="text" value="${l.name}" data-zone="${zone}" data-idx="${i}" onchange="onLockNameChange(this)" placeholder="ชื่อ Lock เช่น 25/05/A">
-            <button class="lcfg-del" onclick="removeLockRow('${zone}',${i})" title="ลบ Lock">&#10005;</button>
-        </div>`).join('') || '<div style="color:#cbd5e0;font-size:0.75rem;text-align:center;padding:8px;">ไม่มี Lock</div>';
+        container.innerHTML = arr.map((l, i) => {
+            const curColor = l.color || 'slate';
+            const colorDots = LOCK_COLORS.map(c =>
+                `<div class="lcfg-cdot${c.id===curColor?' active':''}" style="background:${c.dot}" onclick="setLockColor('${zone}',${i},'${c.id}')" title="${c.id}"></div>`
+            ).join('');
+            return `<div class="lcfg-row">
+                <span class="lcfg-key">${i+1}</span>
+                <div class="lcfg-move">
+                    <button onclick="moveLockRow('${zone}',${i},-1)" ${i===0?'disabled':''} title="ขึ้น">&#9650;</button>
+                    <button onclick="moveLockRow('${zone}',${i},1)" ${i===arr.length-1?'disabled':''} title="ลง">&#9660;</button>
+                </div>
+                <input type="text" value="${l.name}" data-zone="${zone}" data-idx="${i}" onchange="onLockNameChange(this)" placeholder="ชื่อ Lock">
+                <div class="lcfg-colors">${colorDots}</div>
+                <button class="lcfg-del" onclick="removeLockRow('${zone}',${i})" title="ลบ Lock">&#10005;</button>
+            </div>`;
+        }).join('') || '<div style="color:#cbd5e0;font-size:0.75rem;text-align:center;padding:8px;">ไม่มี Lock</div>';
     });
+}
+
+function setLockColor(zone, idx, colorId) {
+    // Save current input names first
+    document.querySelectorAll(`#lockCfgZone${zone} input`).forEach(el => {
+        const i = parseInt(el.dataset.idx);
+        const arr = zone === 'A' ? lockCfgTemp.zoneA : lockCfgTemp.zoneB;
+        if (arr[i]) arr[i].name = el.value.trim() || arr[i].key;
+    });
+    const arr = zone === 'A' ? lockCfgTemp.zoneA : lockCfgTemp.zoneB;
+    arr[idx].color = colorId;
+    renderLockCfgRows();
 }
 
 function onLockNameChange(el) {
@@ -1564,7 +1602,7 @@ function addLockRow(zone) {
     for (let n = 1; n < 100; n++) {
         if (!allKeys.includes('L'+n)) { newKey = 'L'+n; break; }
     }
-    arr.push({ key: newKey, name: newKey });
+    arr.push({ key: newKey, name: newKey, color: 'slate' });
     renderLockCfgRows();
 }
 
