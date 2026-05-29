@@ -482,6 +482,18 @@
         .lcfg-layout-btn.active { background: #fff; color: #0f766e; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         .lcfg-add-btn { width: 100%; margin-top: 8px; background: none; border: 1.5px dashed #cbd5e0; color: #718096; font-size: 0.78rem; padding: 8px; border-radius: 8px; cursor: pointer; transition: all 0.15s; font-weight: 600; }
         .lcfg-add-btn:hover { border-color: #4299e1; color: #0e7490; background: #ebf8ff; }
+        /* Tier break indicator in config */
+        .lcfg-tier-break { display: flex; align-items: center; gap: 6px; margin: 6px 0 2px; padding: 0 4px; }
+        .lcfg-tier-line { flex: 1; height: 1px; background: #94a3b8; }
+        .lcfg-tier-label { font-size: 0.62rem; color: #64748b; font-weight: 700; white-space: nowrap; letter-spacing: 0.3px; }
+        .lcfg-tier-btn { background: none; border: 1px solid #e2e8f0; color: #94a3b8; font-size: 0.58rem; padding: 2px 6px; border-radius: 4px; cursor: pointer; flex-shrink: 0; transition: all 0.15s; }
+        .lcfg-tier-btn:hover { border-color: #94a3b8; color: #64748b; background: #f1f5f9; }
+        .lcfg-tier-toggle { background: none; border: 1px dashed #cbd5e0; color: #a0aec0; font-size: 0.6rem; padding: 1px 5px; border-radius: 3px; cursor: pointer; flex-shrink: 0; }
+        .lcfg-tier-toggle.active { border-style: solid; border-color: #0d9488; color: #0d9488; background: #f0fdfa; }
+        /* Tier divider in ramp view */
+        .tier-divider { display: flex; align-items: center; gap: 6px; padding: 2px 0; }
+        .tier-divider-line { flex: 1; height: 1.5px; background: linear-gradient(90deg, #94a3b8, transparent); }
+        .tier-divider-label { font-size: 0.62rem; color: #64748b; font-weight: 700; white-space: nowrap; background: #e8edf2; padding: 1px 8px; border-radius: 3px; }
         /* Lock color dropdown */
         .lcfg-color-sel { position: relative; flex-shrink: 0; }
         .lcfg-color-btn { width: 28px; height: 28px; border-radius: 6px; border: 2px solid #e2e8f0; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; justify-content: center; }
@@ -1228,7 +1240,7 @@
             </div>
         </div>
         <div style="margin-top:14px;padding:10px 14px;background:#edf1f7;border-radius:10px;font-size:0.68rem;color:#718096;line-height:1.5;text-align:center;">
-            &#9432; ตั้งชื่อ Lock ได้อิสระ | &#9650;&#9660; เรียงลำดับ | ลบ Lock ที่มี Batch จะย้ายไป Lock แรก
+            &#9432; ตั้งชื่อ Lock ได้อิสระ | &#9650;&#9660; เรียงลำดับ | กดปุ่ม "ชั้น" เพื่อแบ่งกลุ่ม (รูปแบบ B)
         </div>
         <div class="edit-actions" style="margin-top:16px;">
             <button class="btn btn-close" onclick="closeLockConfig()">ยกเลิก</button>
@@ -1407,8 +1419,14 @@ function buildZone(containerId, locks, hopperKey, hopperName, hopperClass, hoppe
     // Vertical: wrap locks in a sub-container that stacks vertically
     if (isVertical) html += '<div class="locks-vertical-wrap">';
 
-    locks.forEach(l => {
+    let tierCount = 1;
+    locks.forEach((l, idx) => {
         const lc = LOCK_COLORS.find(c => c.id === (l.color||'slate')) || LOCK_COLORS[0];
+        // Tier divider in Pattern B
+        if (isVertical && idx > 0 && l.tierBreak) {
+            tierCount++;
+            html += `<div class="tier-divider"><div class="tier-divider-line"></div><span class="tier-divider-label">ชั้นที่ ${tierCount}</span><div class="tier-divider-line" style="background:linear-gradient(90deg,transparent,#94a3b8)"></div></div>`;
+        }
         const cssVars = `--lock-color:${lc.border};--lock-bg:${lc.bg};--lock-header:${lc.header};--lock-border-empty:${lc.borderEmpty}`;
         html += `<div class="v-col lock-style empty${hiddenSlots.has(l.key)?' slot-hidden':''}" id="drop-${l.key}" data-slot="${l.key}" style="${cssVars}">
             <div class="slot-gear-wrap" id="gear-${l.key}">
@@ -1598,18 +1616,35 @@ function renderLockCfgRows() {
     ['A','B'].forEach(zone => {
         const arr = zone === 'A' ? lockCfgTemp.zoneA : lockCfgTemp.zoneB;
         const container = document.getElementById(`lockCfgZone${zone}`);
+        let tierNum = 1;
         container.innerHTML = arr.map((l, i) => {
             const curColor = l.color || 'slate';
             const cur = LOCK_COLORS.find(c => c.id === curColor) || LOCK_COLORS[0];
             const colorDots = LOCK_COLORS.map(c =>
                 `<div class="lcfg-cdot${c.id===curColor?' active':''}" style="background:${c.dot}" onclick="setLockColor('${zone}',${i},'${c.id}')" title="${c.id}"></div>`
             ).join('');
-            return `<div class="lcfg-row">
+
+            // Tier break divider (show before this lock if tierBreak is set, not on first lock)
+            let tierHtml = '';
+            if (i > 0 && l.tierBreak) {
+                tierNum++;
+                tierHtml = `<div class="lcfg-tier-break">
+                    <div class="lcfg-tier-line"></div>
+                    <span class="lcfg-tier-label">ชั้นที่ ${tierNum}</span>
+                    <div class="lcfg-tier-line"></div>
+                </div>`;
+            }
+
+            const tierBtnClass = (i > 0 && l.tierBreak) ? 'lcfg-tier-toggle active' : 'lcfg-tier-toggle';
+            const tierBtn = i > 0 ? `<button class="${tierBtnClass}" onclick="toggleTierBreak('${zone}',${i})" title="แบ่งชั้น">ชั้น</button>` : '';
+
+            return tierHtml + `<div class="lcfg-row">
                 <span class="lcfg-key">${i+1}</span>
                 <div class="lcfg-move">
                     <button onclick="moveLockRow('${zone}',${i},-1)" ${i===0?'disabled':''} title="ขึ้น">&#9650;</button>
                     <button onclick="moveLockRow('${zone}',${i},1)" ${i===arr.length-1?'disabled':''} title="ลง">&#9660;</button>
                 </div>
+                ${tierBtn}
                 <input type="text" value="${l.name}" data-zone="${zone}" data-idx="${i}" onchange="onLockNameChange(this)" placeholder="ชื่อ Lock">
                 <div class="lcfg-color-sel">
                     <button class="lcfg-color-btn" onclick="toggleColorDD(this,event)" title="เลือกสี">
@@ -1637,6 +1672,18 @@ function toggleColorDD(btn, e) {
 document.addEventListener('click', () => {
     document.querySelectorAll('.lcfg-color-dd.open').forEach(d => d.classList.remove('open'));
 });
+
+function toggleTierBreak(zone, idx) {
+    // Save current input names first
+    document.querySelectorAll(`#lockCfgZone${zone} input`).forEach(el => {
+        const i = parseInt(el.dataset.idx);
+        const arr = zone === 'A' ? lockCfgTemp.zoneA : lockCfgTemp.zoneB;
+        if (arr[i]) arr[i].name = el.value.trim() || arr[i].key;
+    });
+    const arr = zone === 'A' ? lockCfgTemp.zoneA : lockCfgTemp.zoneB;
+    arr[idx].tierBreak = !arr[idx].tierBreak;
+    renderLockCfgRows();
+}
 
 function setLockColor(zone, idx, colorId) {
     // Save current input names first
