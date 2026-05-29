@@ -1473,7 +1473,7 @@ function lockColHTML(l) {
     const lc = LOCK_COLORS.find(c => c.id === (l.color||'slate')) || LOCK_COLORS[0];
     const lanes = l.lanes || 3;
     const cssVars = `--lock-color:${lc.border};--lock-bg:${lc.bg};--lock-header:${lc.header};--lock-border-empty:${lc.borderEmpty};--lock-lanes:${lanes}`;
-    const lanesInfo = lanes > 0 ? `<div class="col-lanes">${lanes} คลอง</div>` : '';
+    const lanesInfo = lanes > 0 ? `<div class="col-lanes">${lanes} แถว</div>` : '';
     return `<div class="v-col lock-style empty${hiddenSlots.has(l.key)?' slot-hidden':''}" id="drop-${l.key}" data-slot="${l.key}" style="${cssVars}">
         <div class="slot-gear-wrap" id="gear-${l.key}">
             <button class="slot-gear-btn" onclick="toggleGearMenu('${l.key}',event)">&#9881;</button>
@@ -1684,7 +1684,7 @@ function renderLockCfgRows() {
                 </div>
                 ${tierBtn}
                 <input type="text" value="${l.name}" data-zone="${zone}" data-idx="${i}" onchange="onLockNameChange(this)" placeholder="ชื่อ Lock">
-                <input type="number" value="${lanesVal}" min="1" max="10" data-zone="${zone}" data-idx="${i}" onchange="onLockLanesChange(this)" style="width:36px;text-align:center;padding:4px 2px;border:1.5px solid #e2e8f0;border-radius:5px;font-size:0.75rem;font-weight:700;color:#64748b;" title="จำนวนคลอง">
+                <input type="number" value="${lanesVal}" min="1" max="10" data-zone="${zone}" data-idx="${i}" onchange="onLockLanesChange(this)" style="width:36px;text-align:center;padding:4px 2px;border:1.5px solid #e2e8f0;border-radius:5px;font-size:0.75rem;font-weight:700;color:#64748b;" title="จำนวนแถว">
                 <div class="lcfg-color-sel">
                     <button class="lcfg-color-btn" onclick="toggleColorDD(this,event)" title="เลือกสี">
                         <div class="cdot-preview" style="background:${cur.dot}"></div>
