@@ -3767,7 +3767,6 @@ function startTour() {
     document.body.appendChild(tourTooltip);
 
     tourStep = 0;
-    lockBodyScroll();
     showTourStep();
 }
 
@@ -3777,12 +3776,9 @@ function showTourStep() {
     const el = document.querySelector(step.target);
     if (!el) { tourStep++; showTourStep(); return; }
 
-    // Unlock scroll temporarily to scroll to element
-    unlockBodyScroll();
     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
     setTimeout(() => {
-        lockBodyScroll();
         const rect = el.getBoundingClientRect();
         const pad = 8;
 
@@ -3847,7 +3843,6 @@ function nextTourStep() {
 }
 
 function endTour() {
-    unlockBodyScroll();
     [tourBackdrop, tourSpotlight, tourTooltip].forEach(el => { if (el) el.remove(); });
     tourBackdrop = tourSpotlight = tourTooltip = null;
     localStorage.setItem('ffb3_tour_done', '1');
