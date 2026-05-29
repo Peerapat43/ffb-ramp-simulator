@@ -253,6 +253,11 @@
         .slot-gear-item.danger:hover { background: #fff5f5; }
         .lcfg-lanes-sel { width: 38px; padding: 4px 2px; border: 1.5px solid #e2e8f0; border-radius: 6px; font-size: 0.78rem; font-weight: 700; color: #0e7490; text-align: center; background: #f8fafc; cursor: pointer; flex-shrink: 0; }
         .lcfg-lanes-sel:focus { border-color: #0d9488; outline: none; }
+        .lcfg-eye { background: none; border: 1px solid #e2e8f0; border-radius: 5px; width: 26px; height: 26px; cursor: pointer; font-size: 0.7rem; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+        .lcfg-eye:hover { background: #f1f5f9; }
+        .lcfg-eye.hidden { background: #fef2f2; border-color: #fecaca; }
+        .lcfg-row-hidden { opacity: 0.5; }
+        .lcfg-row-hidden input { text-decoration: line-through; }
 
         .v-col .hopper-vlabel {
             writing-mode: vertical-rl; text-orientation: mixed;
@@ -904,7 +909,7 @@
             <button class="hdr-nav-btn" onclick="changeDate(1)" title="วันถัดไป">&#9654;</button>
         </div>
         <span class="hdr-pill hdr-batch" id="batchPill" onclick="openBatchConfig()" style="cursor:pointer;" title="คลิกเพื่อแก้ไข">Batch วันนี้</span>
-        <button class="hdr-pill" id="btnLockConfig" onclick="openLockConfig()" style="cursor:pointer;background:rgba(255,255,255,0.2);border:none;color:#fff;font-weight:600;font-size:0.8rem;" title="ตั้งค่า Lock">&#9881; Lock</button>
+        <button class="hdr-pill" id="btnLockConfig" onclick="openLockConfig()" style="cursor:pointer;background:rgba(255,255,255,0.2);border:none;color:#fff;font-weight:600;font-size:0.8rem;" title="ตั้งค่า">&#9881; ตั้งค่า</button>
         <button onclick="startTour()" title="วิธีใช้งาน" style="cursor:pointer;background:rgba(255,255,255,0.2);border:none;color:#fff;font-weight:600;font-size:0.72rem;padding:4px 10px;border-radius:6px;">? วิธีใช้</button>
     </div>
 </div>
@@ -1475,14 +1480,6 @@ function lockColHTML(l) {
     const lanes = l.lanes || 3;
     const cssVars = `--lock-color:${lc.border};--lock-bg:${lc.bg};--lock-header:${lc.header};--lock-border-empty:${lc.borderEmpty};--lock-lanes:${lanes}`;
     return `<div class="v-col lock-style empty${hiddenSlots.has(l.key)?' slot-hidden':''}" id="drop-${l.key}" data-slot="${l.key}" style="${cssVars}">
-        <div class="slot-gear-wrap" id="gear-${l.key}">
-            <button class="slot-gear-btn" onclick="toggleGearMenu('${l.key}',event)">&#9881;</button>
-            <div class="slot-gear-menu">
-                <button class="slot-gear-item" data-slot-key="${l.key}" onclick="toggleSlotHidden('${l.key}',event);closeAllGearMenus();">
-                    <span class="gear-eye-icon"></span> <span class="gear-eye-label"></span>
-                </button>
-            </div>
-        </div>
         <div class="v-col-header" draggable="true" ondragstart="onLockDS(event,'${l.key}')" ondragend="onLockDE(event,'${l.key}')" onclick="tapSelectLock('${l.key}',event)">
             <div class="col-name">${l.name}</div>
             <div class="col-badge" id="badge-${l.key}">ว่าง</div>
@@ -1677,7 +1674,10 @@ function renderLockCfgRows() {
                 `<option value="${n}"${n===lanesVal?' selected':''}>${n}</option>`
             ).join('');
 
-            return tierHtml + `<div class="lcfg-row">
+            const isHidden = hiddenSlots.has(l.key);
+            const eyeBtn = `<button class="lcfg-eye${isHidden?' hidden':''}" onclick="toggleLockHiddenCfg('${l.key}',this)" title="${isHidden?'ซ่อนอยู่ (ไม่นับน้ำหนัก)':'แสดงอยู่'}">${isHidden?'🚫':'👁'}</button>`;
+
+            return tierHtml + `<div class="lcfg-row${isHidden?' lcfg-row-hidden':''}">
                 <span class="lcfg-key">${i+1}</span>
                 <div class="lcfg-move">
                     <button onclick="moveLockRow('${zone}',${i},-1)" ${i===0?'disabled':''} title="ขึ้น">&#9650;</button>
@@ -1694,6 +1694,7 @@ function renderLockCfgRows() {
                         <div class="lcfg-color-grid">${colorDots}</div>
                     </div>
                 </div>
+                ${eyeBtn}
                 <button class="lcfg-del" onclick="removeLockRow('${zone}',${i})" title="ลบ Lock">&#10005;</button>
             </div>`;
         }).join('') || '<div style="color:#cbd5e0;font-size:0.75rem;text-align:center;padding:8px;">ไม่มี Lock</div>';
@@ -1718,6 +1719,24 @@ function onLockLanesChange(el) {
     const idx = parseInt(el.dataset.idx);
     const arr = zone === 'A' ? lockCfgTemp.zoneA : lockCfgTemp.zoneB;
     if (arr[idx]) arr[idx].lanes = parseInt(el.value) || 3;
+}
+
+function toggleLockHiddenCfg(lockKey, btn) {
+    if (hiddenSlots.has(lockKey)) {
+        hiddenSlots.delete(lockKey);
+    } else {
+        hiddenSlots.add(lockKey);
+    }
+    localStorage.setItem('ffb3_hidden', JSON.stringify([...hiddenSlots]));
+    // Re-render the config rows to update visual state
+    // Save current names first
+    document.querySelectorAll('#lockCfgZoneA input[type=text], #lockCfgZoneB input[type=text]').forEach(el => {
+        const zone = el.dataset.zone;
+        const idx = parseInt(el.dataset.idx);
+        const arr = zone === 'A' ? lockCfgTemp.zoneA : lockCfgTemp.zoneB;
+        if (arr[idx]) arr[idx].name = el.value.trim() || arr[idx].key;
+    });
+    renderLockCfgRows();
 }
 
 function toggleTierBreak(zone, idx) {
