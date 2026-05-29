@@ -1215,10 +1215,10 @@
 
 <!-- LOCK CONFIG MODAL -->
 <div class="edit-modal" id="lockConfigModal">
-    <div class="edit-box" style="width:860px;max-width:95%;">
+    <div class="edit-box" style="width:960px;max-width:96%;">
         <div style="text-align:center;margin-bottom:18px;">
             <div style="display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;background:linear-gradient(135deg,#134e4a,#0f766e);border-radius:12px;color:#fff;font-size:1.2rem;margin-bottom:6px;">&#9881;</div>
-            <h3 style="margin:0;font-size:1.08rem;color:#1a202c;font-weight:800;">Lock Configuration</h3>
+            <h3 style="margin:0;font-size:1.08rem;color:#1a202c;font-weight:800;">ตั้งค่า Lock</h3>
             <div style="font-size:0.7rem;color:#a0aec0;">จัดการ Lock แต่ละ Zone</div>
         </div>
         <div class="lock-cfg-zones">
@@ -1251,8 +1251,18 @@
                 <button class="lcfg-add-btn" onclick="addLockRow('B')">+ เพิ่ม Lock</button>
             </div>
         </div>
-        <div style="margin-top:14px;padding:10px 14px;background:#edf1f7;border-radius:10px;font-size:0.68rem;color:#718096;line-height:1.5;text-align:center;">
-            &#9432; ตั้งชื่อ Lock ได้อิสระ | &#9650;&#9660; เรียงลำดับ | กดปุ่ม "ชั้น" เพื่อแบ่งกลุ่ม Lock
+        <div style="margin-top:14px;padding:12px 16px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;font-size:0.68rem;color:#475569;line-height:1.7;">
+            <div style="font-weight:700;color:#0e7490;margin-bottom:6px;font-size:0.75rem;">วิธีใช้งาน</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;">
+                <span>▲▼ เรียงลำดับ Lock</span>
+                <span><b style="border:1px solid #0d9488;color:#0d9488;padding:0 3px;border-radius:2px;font-size:0.6rem;">ชั้น</b> แบ่งกลุ่มชั้น (รูปแบบ B)</span>
+                <span>📝 ตั้งชื่อ Lock ได้อิสระ</span>
+                <span><b style="color:#0e7490;">1-8</b> จำนวนแถวกองปาล์ม</span>
+                <span>🎨 เลือกสี Lock</span>
+                <span>👁 ซ่อน/แสดง (ไม่นับน้ำหนัก)</span>
+                <span>✕ ลบ Lock (Batch ย้ายไป Lock แรก)</span>
+                <span><b>รูปแบบ A</b> = แนวตั้ง | <b>B</b> = แนวนอน</span>
+            </div>
         </div>
         <div class="edit-actions" style="margin-top:16px;">
             <button class="btn btn-close" onclick="closeLockConfig()">ยกเลิก</button>
