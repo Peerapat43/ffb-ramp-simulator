@@ -1338,6 +1338,19 @@ function loadLockConfig() {
     } catch(e){}
 }
 
+async function loadLockConfigFromFirebase() {
+    try {
+        const snap = await fbDb.ref('config/lockConfig').once('value');
+        const d = snap.val();
+        if (d && d.zoneA && d.zoneB) {
+            lockConfig = d;
+            localStorage.setItem('ffb3_lockcfg', JSON.stringify(lockConfig));
+            return true;
+        }
+    } catch(e) { console.error('Firebase loadLockConfig error:', e); }
+    return false;
+}
+
 function saveLockConfigStorage() {
     localStorage.setItem('ffb3_lockcfg', JSON.stringify(lockConfig));
     try { fbDb.ref('config/lockConfig').set(lockConfig); } catch(e) {}
@@ -1359,16 +1372,26 @@ async function init() {
         if (this.value) switchDate(this.value);
         this.style.pointerEvents = 'none';
     });
-    // Then try to load from file (async, will override if file exists)
+    // Then try to load from Firebase (async, will override if exists)
+    try {
+        const hidSnap = await fbDb.ref('config/hiddenSlots').once('value');
+        const hidVal = hidSnap.val();
+        if (Array.isArray(hidVal)) { hiddenSlots = new Set(hidVal); localStorage.setItem('ffb3_hidden', JSON.stringify(hidVal)); }
+    } catch(e) {}
+    const cfgFromFb = await loadLockConfigFromFirebase();
+    if (cfgFromFb) { rebuildSlotsAndNames(); }
     const fromFile = await loadStorageAsync();
-    if (fromFile) { renderAll(); updateDateDisplay(); }
+    if (fromFile || cfgFromFb) { buildLayout(); renderAll(); setupDrop(); setupHeaderDelete(); updateDateDisplay(); }
     updateSyncBadge();
 }
 
 function loadHiddenSlots() {
     try { const d = JSON.parse(localStorage.getItem('ffb3_hidden')); if (Array.isArray(d)) hiddenSlots = new Set(d); } catch(e){}
 }
-function saveHiddenSlots() { localStorage.setItem('ffb3_hidden', JSON.stringify([...hiddenSlots])); }
+function saveHiddenSlots() {
+    localStorage.setItem('ffb3_hidden', JSON.stringify([...hiddenSlots]));
+    try { fbDb.ref('config/hiddenSlots').set([...hiddenSlots]); } catch(e) {}
+}
 
 function toggleSlotHidden(key, e) {
     if (e) e.stopPropagation();
