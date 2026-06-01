@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FFB Ramp Simulator - Top View</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f4f8; color: #1a202c; }
@@ -1338,6 +1340,7 @@ function loadLockConfig() {
 
 function saveLockConfigStorage() {
     localStorage.setItem('ffb3_lockcfg', JSON.stringify(lockConfig));
+    try { fbDb.ref('config/lockConfig').set(lockConfig); } catch(e) {}
 }
 
 async function init() {
@@ -1920,38 +1923,49 @@ function saveLockConfig() {
 document.getElementById('lockConfigModal').addEventListener('click', function(e){ if(e.target===this) closeLockConfig(); });
 
 function dateKey(d) { return 'ffb3_' + (d || currentDate); }
-const API = '/api';
+
+// ========= FIREBASE CLOUD SYNC =========
+const firebaseConfig = {
+    apiKey: "AIzaSyCUpwKYpLMHc0Qk9jOtJ0d-rO6ZEvG9jn8",
+    authDomain: "ffb-ramp.firebaseapp.com",
+    databaseURL: "https://ffb-ramp-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "ffb-ramp",
+    storageBucket: "ffb-ramp.firebasestorage.app",
+    messagingSenderId: "958776269768",
+    appId: "1:958776269768:web:ba2c2a8c9a20eba965fefd"
+};
+const fbApp = firebase.initializeApp(firebaseConfig);
+const fbDb = firebase.database();
+function fbRef(date) { return fbDb.ref('days/' + date.replace(/\-/g, '')); }
+
 let fileSync = 'idle'; // idle | saving | saved | error
 
 function save() {
     const data = { slots, moveHistory, batchConfig, lockConfig: lockConfig, date: currentDate };
-    // Save to localStorage
+    // Save to localStorage (fast cache)
     localStorage.setItem(dateKey(), JSON.stringify(data));
-    // Save to file via API
-    saveToFile(currentDate, data);
+    // Save to Firebase (cloud sync)
+    saveToFirebase(currentDate, data);
 }
 
-async function saveToFile(date, data) {
+async function saveToFirebase(date, data) {
     try {
         fileSync = 'saving'; updateSyncBadge();
-        const res = await fetch(`${API}/data/${date}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        if (res.ok) { fileSync = 'saved'; } else { fileSync = 'error'; }
-    } catch(e) { fileSync = 'error'; }
+        await fbRef(date).set(data);
+        fileSync = 'saved';
+    } catch(e) {
+        console.error('Firebase save error:', e);
+        fileSync = 'error';
+    }
     updateSyncBadge();
 }
 
 async function loadFromFile(date) {
     try {
-        const res = await fetch(`${API}/data/${date}`);
-        if (res.ok) {
-            const d = await res.json();
-            if (d && d.slots) return d;
-        }
-    } catch(e) {}
+        const snap = await fbRef(date).once('value');
+        const d = snap.val();
+        if (d && d.slots) return d;
+    } catch(e) { console.error('Firebase load error:', e); }
     return null;
 }
 
