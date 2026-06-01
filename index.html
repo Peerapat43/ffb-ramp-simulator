@@ -511,11 +511,11 @@
         .lcfg-tier-toggle.active { border-style: solid; border-color: #0d9488; color: #0d9488; background: #f0fdfa; }
         /* Tier container: wraps a group of locks */
         .tier-container {
-            background: #f1f5f9; border: 1.5px solid #cbd5e1; border-radius: 10px;
+            background: var(--tier-bg, #f1f5f9); border: 1.5px solid var(--tier-border, #cbd5e1); border-radius: 10px;
             padding: 6px; position: relative;
         }
         .tier-container-label {
-            font-size: 0.65rem; font-weight: 700; color: #475569;
+            font-size: 0.65rem; font-weight: 700; color: var(--tier-text, #475569);
             padding: 2px 10px; margin-bottom: 4px;
         }
         .tier-container-body { display: flex; gap: 4px; }
@@ -1464,11 +1464,11 @@ function buildZone(containerId, locks, hopperKey, hopperName, hopperClass, hoppe
 
     // Split locks into tier groups
     const tierGroups = [];
-    let currentGroup = { name: locks[0]?.tierName || 'ชั้นที่ 1', locks: [] };
+    let currentGroup = { name: locks[0]?.tierName || 'ชั้นที่ 1', color: locks[0]?.tierColor || 'gray', locks: [] };
     locks.forEach((l, idx) => {
         if (idx > 0 && l.tierBreak) {
             tierGroups.push(currentGroup);
-            currentGroup = { name: l.tierName || ('ชั้นที่ ' + (tierGroups.length + 2)), locks: [] };
+            currentGroup = { name: l.tierName || ('ชั้นที่ ' + (tierGroups.length + 2)), color: l.tierColor || 'gray', locks: [] };
         }
         currentGroup.locks.push(l);
     });
@@ -1479,7 +1479,8 @@ function buildZone(containerId, locks, hopperKey, hopperName, hopperClass, hoppe
         // Pattern B with tiers: each tier wrapped in a container
         html += '<div class="locks-vertical-wrap">';
         tierGroups.forEach(g => {
-            html += `<div class="tier-container">`;
+            const tc = TIER_COLORS.find(c => c.id === g.color) || TIER_COLORS[0];
+            html += `<div class="tier-container" style="--tier-bg:${tc.bg};--tier-border:${tc.border};--tier-text:${tc.text}">`;
             html += `<div class="tier-container-label">${g.name}</div>`;
             html += `<div class="tier-container-body tier-body-vertical">`;
             g.locks.forEach(l => { html += lockColHTML(l); });
@@ -1495,7 +1496,8 @@ function buildZone(containerId, locks, hopperKey, hopperName, hopperClass, hoppe
         // Pattern A with tiers: each tier wrapped in a container
         html += '<div class="locks-tiered-wrap">';
         tierGroups.forEach(g => {
-            html += `<div class="tier-container">`;
+            const tc = TIER_COLORS.find(c => c.id === g.color) || TIER_COLORS[0];
+            html += `<div class="tier-container" style="--tier-bg:${tc.bg};--tier-border:${tc.border};--tier-text:${tc.text}">`;
             html += `<div class="tier-container-label">${g.name}</div>`;
             html += `<div class="tier-container-body tier-body-columns">`;
             g.locks.forEach(l => { html += lockColHTML(l); });
@@ -1562,6 +1564,12 @@ function updateLocationDropdowns() {
 }
 
 // ========= LOCK CONFIG MODAL =========
+const TIER_COLORS = [
+    { id:'gray',   label:'เทา',   bg:'#f1f5f9', border:'#cbd5e1', text:'#475569' },
+    { id:'red',    label:'แดง',   bg:'#fef2f2', border:'#fca5a5', text:'#dc2626' },
+    { id:'yellow', label:'เหลือง', bg:'#fefce8', border:'#fde68a', text:'#a16207' },
+    { id:'green',  label:'เขียว', bg:'#f0fdf4', border:'#86efac', text:'#16a34a' }
+];
 const LOCK_COLORS = [
     { id:'slate',  dot:'#94a3b8', header:'#f1f5f9', border:'#cbd5e1', bg:'#f8fafc', borderEmpty:'#e2e8f0' },
     { id:'teal',   dot:'#14b8a6', header:'#ccfbf1', border:'#14b8a6', bg:'#f0fdfa', borderEmpty:'#99f6e4' },
@@ -1729,9 +1737,14 @@ function renderLockCfgRows() {
         let tierNum = 1;
         const hasTierBreaks = arr.some(l => l.tierBreak);
         // First tier name header (only if tiers exist)
+        const firstTierColor = arr[0]?.tierColor || 'gray';
+        const firstTcBtns = TIER_COLORS.map(c =>
+            `<div style="width:14px;height:14px;border-radius:50%;background:${c.border};cursor:pointer;border:2px solid ${c.id===firstTierColor?'#1a202c':'transparent'}" onclick="setTierColor('${zone}',0,'${c.id}')" title="${c.label}"></div>`
+        ).join('');
         const firstTierHtml = hasTierBreaks ? `<div class="lcfg-tier-break" style="margin-bottom:4px;">
             <div class="lcfg-tier-line"></div>
             <input type="text" class="lcfg-tier-name" value="${arr[0]?.tierName || 'ชั้นที่ 1'}" data-zone="${zone}" data-idx="0" onchange="onTierNameChange(this)" placeholder="ชื่อชั้น 1">
+            <div style="display:flex;gap:3px;">${firstTcBtns}</div>
             <div class="lcfg-tier-line"></div>
         </div>` : '';
         container.innerHTML = firstTierHtml + arr.map((l, i) => {
@@ -1746,9 +1759,14 @@ function renderLockCfgRows() {
             if (i > 0 && l.tierBreak) {
                 tierNum++;
                 const tName = l.tierName || ('ชั้นที่ ' + tierNum);
+                const tColor = l.tierColor || 'gray';
+                const tcBtns = TIER_COLORS.map(c =>
+                    `<div style="width:14px;height:14px;border-radius:50%;background:${c.border};cursor:pointer;border:2px solid ${c.id===tColor?'#1a202c':'transparent'}" onclick="setTierColor('${zone}',${i},'${c.id}')" title="${c.label}"></div>`
+                ).join('');
                 tierHtml = `<div class="lcfg-tier-break">
                     <div class="lcfg-tier-line"></div>
                     <input type="text" class="lcfg-tier-name" value="${tName}" data-zone="${zone}" data-idx="${i}" onchange="onTierNameChange(this)" placeholder="ชื่อชั้น">
+                    <div style="display:flex;gap:3px;">${tcBtns}</div>
                     <div class="lcfg-tier-line"></div>
                 </div>`;
             }
@@ -1822,6 +1840,18 @@ function toggleLockHiddenCfg(lockKey, btn) {
         const arr = zone === 'A' ? lockCfgTemp.zoneA : lockCfgTemp.zoneB;
         if (arr[idx]) arr[idx].name = el.value.trim() || arr[idx].key;
     });
+    renderLockCfgRows();
+}
+
+function setTierColor(zone, idx, colorId) {
+    // Save current names first
+    document.querySelectorAll(`#lockCfgZone${zone} input[type=text]`).forEach(el => {
+        const i = parseInt(el.dataset.idx);
+        const arr = zone === 'A' ? lockCfgTemp.zoneA : lockCfgTemp.zoneB;
+        if (arr[i]) arr[i].name = el.value.trim() || arr[i].key;
+    });
+    const arr = zone === 'A' ? lockCfgTemp.zoneA : lockCfgTemp.zoneB;
+    if (arr[idx]) arr[idx].tierColor = colorId;
     renderLockCfgRows();
 }
 
