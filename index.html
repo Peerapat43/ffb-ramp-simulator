@@ -1378,6 +1378,7 @@ async function init() {
         const hidVal = hidSnap.val();
         if (Array.isArray(hidVal)) { hiddenSlots = new Set(hidVal); localStorage.setItem('ffb3_hidden', JSON.stringify(hidVal)); }
     } catch(e) {}
+    await loadBatchConfigFromFirebase();
     const cfgFromFb = await loadLockConfigFromFirebase();
     if (cfgFromFb) { rebuildSlotsAndNames(); }
     const fromFile = await loadStorageAsync();
@@ -1688,7 +1689,7 @@ function renderHopperCfgRows() {
 function toggleHopperHiddenCfg(key) {
     if (hiddenSlots.has(key)) hiddenSlots.delete(key);
     else hiddenSlots.add(key);
-    localStorage.setItem('ffb3_hidden', JSON.stringify([...hiddenSlots]));
+    saveHiddenSlots();
     renderHopperCfgRows();
     renderAll();
 }
@@ -1812,7 +1813,7 @@ function toggleLockHiddenCfg(lockKey, btn) {
     } else {
         hiddenSlots.add(lockKey);
     }
-    localStorage.setItem('ffb3_hidden', JSON.stringify([...hiddenSlots]));
+    saveHiddenSlots();
     // Re-render the config rows to update visual state
     // Save current names first
     document.querySelectorAll('#lockCfgZoneA input[type=text], #lockCfgZoneB input[type=text]').forEach(el => {
@@ -2035,13 +2036,10 @@ async function loadStorageAsync() {
 
 async function getSavedDates() {
     try {
-        const res = await fetch(`${API}/dates`);
-        if (res.ok) {
-            const d = await res.json();
-            return d.dates || [];
-        }
+        const snap = await fbDb.ref('days').once('value');
+        const val = snap.val();
+        if (val) return Object.keys(val).map(k => k.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3'));
     } catch(e) {}
-    // Fallback to localStorage
     try { return JSON.parse(localStorage.getItem('ffb3_dates')) || []; } catch(e){ return []; }
 }
 
@@ -2050,7 +2048,7 @@ async function switchDate(newDate) {
     // Save current date's data
     const data = { slots, moveHistory, batchConfig, lockConfig, date: currentDate };
     localStorage.setItem(dateKey(), JSON.stringify(data));
-    saveToFile(currentDate, data);
+    saveToFirebase(currentDate, data);
     // Switch
     currentDate = newDate;
     slots = {};
@@ -2066,10 +2064,10 @@ async function switchDate(newDate) {
 function updateSyncBadge() {
     const el = document.getElementById('syncBadge');
     if (!el) return;
-    if (fileSync === 'saving') { el.innerHTML = '&#9696; Saving...'; el.style.background = '#f6ad55'; el.style.color = '#fff'; }
-    else if (fileSync === 'saved') { el.innerHTML = '&#9989; File saved'; el.style.background = '#c6f6d5'; el.style.color = '#276749'; }
-    else if (fileSync === 'error') { el.innerHTML = '&#9888; Local only'; el.style.background = '#fed7d7'; el.style.color = '#c53030'; }
-    else { el.innerHTML = '&#128190; Local'; el.style.background = 'rgba(255,255,255,0.15)'; el.style.color = '#fff'; }
+    if (fileSync === 'saving') { el.innerHTML = '&#9696; Syncing...'; el.style.background = '#f6ad55'; el.style.color = '#fff'; }
+    else if (fileSync === 'saved') { el.innerHTML = '&#9989; Cloud'; el.style.background = '#c6f6d5'; el.style.color = '#276749'; }
+    else if (fileSync === 'error') { el.innerHTML = '&#9888; Offline'; el.style.background = '#fed7d7'; el.style.color = '#c2410c'; }
+    else { el.innerHTML = '&#9729; Local'; el.style.background = 'rgba(255,255,255,0.15)'; el.style.color = '#fff'; }
 }
 
 function changeDate(delta) {
@@ -2956,6 +2954,26 @@ function loadBatchConfig() {
     updateBatchPill();
 }
 
+async function loadBatchConfigFromFirebase() {
+    try {
+        const bSnap = await fbDb.ref('config/batchConfig').once('value');
+        const bVal = bSnap.val();
+        if (bVal) { batchConfig = bVal; localStorage.setItem('ffb3_batchcfg', JSON.stringify(batchConfig)); }
+        const aSnap = await fbDb.ref('config/autoIncrement').once('value');
+        const aVal = aSnap.val();
+        if (aVal) { autoIncrement = aVal; localStorage.setItem('ffb3_autoinc', JSON.stringify(autoIncrement)); }
+        applyAutoIncrement();
+        updateBatchPill();
+    } catch(e) { console.error('Firebase loadBatchConfig error:', e); }
+}
+
+function saveBatchConfigToFirebase() {
+    try {
+        fbDb.ref('config/batchConfig').set(batchConfig);
+        fbDb.ref('config/autoIncrement').set(autoIncrement);
+    } catch(e) {}
+}
+
 function applyAutoIncrement() {
     if (!autoIncrement.enabled || !autoIncrement.baseDate) return;
     const base = new Date(autoIncrement.baseDate + 'T00:00:00');
@@ -2966,6 +2984,7 @@ function applyAutoIncrement() {
     batchConfig.branch = 'B.' + (num + 1);
     batchConfig.sub = 'B.' + (num + 2);
     localStorage.setItem('ffb3_batchcfg', JSON.stringify(batchConfig));
+    saveBatchConfigToFirebase();
 }
 
 function updateBatchPill() {
@@ -3049,6 +3068,7 @@ function saveBatchConfig() {
         localStorage.setItem('ffb3_autoinc', JSON.stringify(autoIncrement));
     }
     localStorage.setItem('ffb3_batchcfg', JSON.stringify(batchConfig));
+    saveBatchConfigToFirebase();
     updateBatchPill();
     closeBatchConfig();
     toast('บันทึก Batch วันนี้สำเร็จ');
