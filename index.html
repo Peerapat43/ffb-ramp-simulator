@@ -535,6 +535,100 @@
         .lcfg-cdot:hover { transform: scale(1.15); }
         .lcfg-cdot.active { border-color: #1a202c; box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px #1a202c; }
 
+        /* ===== REPORT PAGE ===== */
+        .report-overlay {
+            display: none; position: fixed; inset: 0; z-index: 2500;
+            background: #f0f4f8; overflow-y: auto; -webkit-overflow-scrolling: touch;
+        }
+        .report-overlay.active { display: block; }
+        .report-bar {
+            background: linear-gradient(135deg, #134e4a, #0f766e); color: #fff;
+            padding: 10px 20px; display: flex; align-items: center; justify-content: space-between;
+            position: sticky; top: 0; z-index: 10;
+        }
+        .report-bar h2 { font-size: 1.1rem; }
+        .report-bar-actions { display: flex; gap: 8px; align-items: center; }
+        .rpt-btn { padding: 6px 14px; border-radius: 7px; border: none; font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+        .rpt-btn-save { background: #2dd4bf; color: #134e4a; }
+        .rpt-btn-save:hover { background: #5eead4; }
+        .rpt-btn-close { background: rgba(255,255,255,0.2); color: #fff; }
+        .rpt-btn-close:hover { background: rgba(255,255,255,0.35); }
+        .report-body { max-width: 1200px; margin: 0 auto; padding: 16px; }
+
+        /* KPI Cards */
+        .rpt-kpi-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 10px; margin-bottom: 16px;
+        }
+        .rpt-kpi {
+            background: #fff; border-radius: 10px; padding: 12px; border: 1.5px solid #e2e8f0;
+            text-align: center; transition: border-color 0.2s;
+        }
+        .rpt-kpi.warn { border-color: #fca5a5; background: #fef2f2; }
+        .rpt-kpi.good { border-color: #86efac; background: #f0fdf4; }
+        .rpt-kpi-label { font-size: 0.65rem; color: #64748b; font-weight: 600; margin-bottom: 4px; }
+        .rpt-kpi-value { font-size: 1.3rem; font-weight: 800; color: #134e4a; }
+        .rpt-kpi-target { font-size: 0.58rem; color: #94a3b8; margin-top: 2px; }
+
+        /* Report sections */
+        .rpt-section {
+            background: #fff; border-radius: 12px; border: 1.5px solid #e2e8f0;
+            margin-bottom: 16px; overflow: hidden;
+        }
+        .rpt-section-header {
+            background: #f8fafc; padding: 10px 16px; font-weight: 700; font-size: 0.88rem;
+            color: #2d3748; border-bottom: 1.5px solid #e2e8f0;
+            display: flex; align-items: center; gap: 8px;
+        }
+
+        /* Report table */
+        .rpt-tbl { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+        .rpt-tbl th {
+            background: linear-gradient(135deg, #134e4a, #0f766e); color: #fff;
+            padding: 8px 6px; text-align: center; font-size: 0.68rem; font-weight: 600;
+            border: 1px solid #0d5e59; white-space: nowrap;
+        }
+        .rpt-tbl td {
+            padding: 4px 6px; border: 1px solid #e2e8f0; text-align: center; vertical-align: middle;
+        }
+        .rpt-tbl tr:hover td { background: #f0fdfa; }
+        .rpt-tbl .row-total td { background: #f0f9ff; font-weight: 700; border-top: 2px solid #0d9488; }
+        .rpt-tbl input {
+            width: 100%; border: none; background: transparent; text-align: center;
+            font-size: 0.75rem; padding: 2px 0; font-weight: 600; color: #2d3748;
+        }
+        .rpt-tbl input:focus { outline: none; background: #fffbeb; border-radius: 3px; }
+        .rpt-tbl input::placeholder { color: #cbd5e0; font-weight: 400; }
+        .rpt-tbl .cell-calc { color: #0e7490; font-weight: 700; }
+        .rpt-tbl .cell-warn { color: #dc2626; font-weight: 700; }
+        .rpt-tbl .cell-good { color: #16a34a; font-weight: 700; }
+        .rpt-tbl .time-cell { background: #f8fafc; font-weight: 700; color: #475569; text-align: left; padding-left: 10px; white-space: nowrap; }
+        .rpt-tbl .status-low { color: #dc2626; font-weight: 700; }
+        .rpt-tbl .status-mid { color: #d97706; font-weight: 700; }
+        .rpt-tbl .status-high { color: #16a34a; font-weight: 700; }
+        .rpt-tbl .src-row td:first-child { text-align: left; padding-left: 12px; font-weight: 700; }
+        .rpt-tbl .deficit { color: #dc2626; }
+        .rpt-tbl .surplus { color: #16a34a; }
+
+        /* Source color bands */
+        .rpt-src-buying { border-left: 4px solid #ed8936 !important; }
+        .rpt-src-general { border-left: 4px solid #60a5fa !important; }
+        .rpt-src-branch { border-left: 4px solid #a78bfa !important; }
+        .rpt-src-farm { border-left: 4px solid #34d399 !important; }
+        .rpt-src-rspo { border-left: 4px solid #f472b6 !important; }
+
+        /* Quality section */
+        .rpt-quality-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 16px; }
+        .rpt-quality-card { background: #f8fafc; border-radius: 8px; padding: 12px; border: 1px solid #e2e8f0; }
+        .rpt-quality-title { font-weight: 700; font-size: 0.82rem; color: #2d3748; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid #e2e8f0; }
+
+        @media (max-width: 768px) {
+            .rpt-kpi-grid { grid-template-columns: repeat(2, 1fr); }
+            .rpt-tbl { font-size: 0.65rem; }
+            .rpt-tbl th, .rpt-tbl td { padding: 3px 3px; }
+            .rpt-quality-grid { grid-template-columns: 1fr; }
+        }
+
         @media (max-width: 1200px) {
             .main { flex-direction: column; }
             .right-panel { width: 100%; flex-direction: row; flex-wrap: wrap; }
@@ -927,6 +1021,7 @@
         <span class="hdr-pill hdr-batch" id="batchPill" onclick="openBatchConfig()" style="cursor:pointer;" title="คลิกเพื่อแก้ไข">Batch วันนี้</span>
         <button class="hdr-pill" id="btnLockConfig" onclick="openLockConfig()" style="cursor:pointer;background:rgba(255,255,255,0.2);border:none;color:#fff;font-weight:600;font-size:0.8rem;" title="ตั้งค่า">&#9881; ตั้งค่า</button>
         <button onclick="startTour()" title="วิธีใช้งาน" style="cursor:pointer;background:rgba(255,255,255,0.2);border:none;color:#fff;font-weight:600;font-size:0.72rem;padding:4px 10px;border-radius:6px;">? วิธีใช้</button>
+        <button onclick="openReport()" title="รายงาน" style="cursor:pointer;background:rgba(255,255,255,0.2);border:none;color:#fff;font-weight:600;font-size:0.72rem;padding:4px 10px;border-radius:6px;">📊 รายงาน</button>
     </div>
 </div>
 
@@ -1279,6 +1374,102 @@
             <button class="export-close" onclick="closeExportReport()">&times;</button>
         </div>
         <div id="exportReportContent"></div>
+    </div>
+</div>
+
+<!-- ===== REPORT OVERLAY ===== -->
+<div class="report-overlay" id="reportOverlay">
+    <div class="report-bar">
+        <div>
+            <h2>📊 FFB Receiving & Quality Control Efficiency Report</h2>
+            <div style="font-size:0.7rem;opacity:0.8;">PQA-EPO Department</div>
+        </div>
+        <div class="report-bar-actions">
+            <span id="rptDateLabel" style="font-size:0.85rem;font-weight:700;background:rgba(255,255,255,0.15);padding:4px 12px;border-radius:6px;"></span>
+            <button class="rpt-btn rpt-btn-save" onclick="saveReport()">💾 บันทึก</button>
+            <button class="rpt-btn rpt-btn-close" onclick="closeReport()">✕ ปิด</button>
+        </div>
+    </div>
+    <div class="report-body">
+        <!-- KPI Dashboard -->
+        <div class="rpt-kpi-grid" id="rptKpiGrid"></div>
+
+        <!-- Section 1: Hourly Table -->
+        <div class="rpt-section">
+            <div class="rpt-section-header">⏰ รายงานรายชั่วโมง (Hourly Receiving)</div>
+            <div style="overflow-x:auto;">
+                <table class="rpt-tbl" id="rptHourlyTable">
+                    <thead>
+                        <tr>
+                            <th rowspan="2" style="min-width:80px;">ช่วง</th>
+                            <th rowspan="2">FFB Receive<br>(Ton/Hr)</th>
+                            <th rowspan="2">FFB Reject<br>(Ton)</th>
+                            <th rowspan="2">% FFB<br>Rejection</th>
+                            <th colspan="5" style="background:#0d5e59;">Vehicle Count</th>
+                            <th rowspan="2">Man-Hours<br>(คน)</th>
+                            <th rowspan="2">Productivity<br>(Ton/Staff)</th>
+                            <th rowspan="2">Load<br>Status</th>
+                        </tr>
+                        <tr>
+                            <th>รวม</th>
+                            <th>Tractor<br>(รถไถ)</th>
+                            <th>Pickup<br>(กระบะ)</th>
+                            <th>6/10 ล้อ</th>
+                            <th>Trailer<br>(พ่วง)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rptHourlyBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Section 2: Source Summary -->
+        <div class="rpt-section">
+            <div class="rpt-section-header">🏭 สรุปตามแหล่งรับเข้า (Source Summary)</div>
+            <div style="overflow-x:auto;">
+                <table class="rpt-tbl" id="rptSourceTable">
+                    <thead>
+                        <tr>
+                            <th style="min-width:100px;text-align:left;padding-left:12px;">ชื่อ</th>
+                            <th>น้ำหนัก<br>(ตัน)</th>
+                            <th>แผนรับเข้า<br>(ตัน)</th>
+                            <th>ขาด/เกิน</th>
+                            <th>Batch<br>รับเข้า</th>
+                            <th>% รับเข้า<br>แต่ละจุด</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rptSourceBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Section 3: Quality & Stock -->
+        <div class="rpt-section">
+            <div class="rpt-section-header">📋 สรุปคุณภาพ & ปาล์มค้างลาน</div>
+            <div class="rpt-quality-grid">
+                <div class="rpt-quality-card">
+                    <div class="rpt-quality-title">รายรับเข้าวันก่อนหน้า</div>
+                    <table class="rpt-tbl" id="rptPrevDayTable">
+                        <tbody id="rptPrevDayBody"></tbody>
+                    </table>
+                </div>
+                <div class="rpt-quality-card">
+                    <div class="rpt-quality-title">ค่าคุณภาพปาล์มประจำวัน</div>
+                    <table class="rpt-tbl" id="rptQualityTable">
+                        <tbody id="rptQualityBody"></tbody>
+                    </table>
+                    <div style="margin-top:12px;padding-top:8px;border-top:1px solid #e2e8f0;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;">
+                            <span style="font-weight:700;font-size:0.82rem;color:#dc2626;">ปาล์มค้างลาน</span>
+                            <div style="display:flex;align-items:center;gap:6px;">
+                                <input type="number" id="rptStockBalance" step="0.01" placeholder="0.00" style="width:80px;text-align:center;border:1.5px solid #e2e8f0;border-radius:6px;padding:4px;font-size:0.85rem;font-weight:700;" oninput="calcReportKPIs()">
+                                <span style="font-size:0.75rem;color:#718096;">ตัน</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -4122,6 +4313,377 @@ function endTour() {
     [tourBackdrop, tourSpotlight, tourTooltip].forEach(el => { if (el) el.remove(); });
     tourBackdrop = tourSpotlight = tourTooltip = null;
     localStorage.setItem('ffb3_tour_done', '1');
+}
+
+// ========= REPORT PAGE =========
+const RPT_TIME_SLOTS = [
+    '7.00-8.00','8.00-9.00','9.01-10.00','10.01-11.00','11.01-12.00',
+    '12.00-13.00','13.01-14.00','14.01-15.00','15.01-16.00',
+    '16.01-17.00','17.01-18.00','18.01-19.00','19.01-20.00'
+];
+const RPT_SOURCES = [
+    { id:'buying', name:'จุดรับซื้อ', plan:330, cls:'rpt-src-buying' },
+    { id:'general', name:'ทั่วไป', plan:30, cls:'rpt-src-general' },
+    { id:'bothong', name:'บ่อทอง', plan:300, cls:'rpt-src-branch' },
+    { id:'thamai', name:'ท่าใหม่', plan:30, cls:'rpt-src-branch' },
+    { id:'farm1', name:'ฟาร์ม 1', plan:0, cls:'rpt-src-farm' },
+    { id:'farm2', name:'ฟาร์ม 2', plan:0, cls:'rpt-src-farm' },
+    { id:'klongphlu', name:'คลองพลู', plan:25, cls:'rpt-src-branch' },
+    { id:'rspo', name:'RSPO', plan:85, cls:'rpt-src-rspo' },
+    { id:'phitsanulok', name:'พิษณุโลก', plan:0, cls:'rpt-src-general' }
+];
+const RPT_QUALITY_SOURCES = ['คลองพลู','บ่อทอง','สำนักงานใหญ่'];
+const RPT_PREV_DAY_ROWS = ['รับเข้า','คัดคืนรายย่อย','คัดปาล์มดิบสาขา','คัดคืนจุดรับซื้อ'];
+
+let reportData = {};
+
+function openReport() {
+    document.getElementById('reportOverlay').classList.add('active');
+    document.body.style.overflow = 'hidden';
+    document.getElementById('rptDateLabel').textContent = 'DATE ' + formatThaiDate(currentDate);
+    loadReportData(currentDate);
+}
+
+function closeReport() {
+    document.getElementById('reportOverlay').classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+function formatThaiDate(d) {
+    const [y,m,day] = d.split('-');
+    return `${day}/${m}/${y}`;
+}
+
+async function loadReportData(date) {
+    reportData = {};
+    // Try Firebase first
+    try {
+        const snap = await fbDb.ref('reports/' + date.replace(/-/g,'')).once('value');
+        if (snap.val()) reportData = snap.val();
+    } catch(e) {}
+    // Fallback localStorage
+    if (!reportData.hourly) {
+        try {
+            const local = JSON.parse(localStorage.getItem('ffb3_report_' + date));
+            if (local) reportData = local;
+        } catch(e) {}
+    }
+    // Init defaults if empty
+    if (!reportData.hourly) {
+        reportData.hourly = {};
+        RPT_TIME_SLOTS.forEach(t => {
+            reportData.hourly[t] = { receive:0, reject:0, tractor:0, pickup:0, wheeler:0, trailer:0, manHours:0 };
+        });
+    }
+    if (!reportData.sources) {
+        reportData.sources = {};
+        RPT_SOURCES.forEach(s => {
+            reportData.sources[s.id] = { weight:0, plan:s.plan, batch:'' };
+        });
+    }
+    if (!reportData.quality) {
+        reportData.quality = {};
+        RPT_QUALITY_SOURCES.forEach(q => { reportData.quality[q] = 0; });
+    }
+    if (!reportData.prevDay) {
+        reportData.prevDay = {};
+        RPT_PREV_DAY_ROWS.forEach(r => { reportData.prevDay[r] = 0; });
+    }
+    if (!reportData.stockBalance) reportData.stockBalance = 0;
+
+    // Auto-fill from ramp data
+    autoFillFromRamp();
+
+    renderReport();
+}
+
+function autoFillFromRamp() {
+    // Calculate total weight and batch from existing slots
+    let totalWeight = 0;
+    let batchCounts = {};
+    Object.entries(slots).forEach(([key, batches]) => {
+        if (!batches || !batches.length) return;
+        batches.forEach(b => {
+            const w = parseFloat(b.weight) || 0;
+            totalWeight += w;
+            const src = b.source || 'buying';
+            if (!batchCounts[src]) batchCounts[src] = { count:0, weight:0 };
+            batchCounts[src].count++;
+            batchCounts[src].weight += w;
+        });
+    });
+
+    // Set total to first source if not manually filled yet
+    const srcTotalFilled = RPT_SOURCES.reduce((s, src) => s + (reportData.sources[src.id]?.weight || 0), 0);
+    if (srcTotalFilled === 0 && totalWeight > 0) {
+        // Map ramp source types to report sources
+        if (batchCounts.buying) {
+            reportData.sources.buying.weight = Math.round(batchCounts.buying.weight * 100) / 100;
+        }
+        if (batchCounts.branch) {
+            // Distribute to branch sources proportionally or to first
+            reportData.sources.bothong.weight = Math.round(batchCounts.branch.weight * 100) / 100;
+        }
+        if (batchCounts.sub) {
+            reportData.sources.general.weight = Math.round(batchCounts.sub.weight * 100) / 100;
+        }
+    }
+
+    // Auto-fill batch numbers from batchConfig
+    RPT_SOURCES.forEach(s => {
+        if (!reportData.sources[s.id].batch) {
+            if (s.id === 'buying') reportData.sources[s.id].batch = batchConfig.buying || '';
+        }
+    });
+}
+
+function renderReport() {
+    renderHourlyTable();
+    renderSourceTable();
+    renderQualitySection();
+    calcReportKPIs();
+}
+
+function renderHourlyTable() {
+    const tbody = document.getElementById('rptHourlyBody');
+    let html = '';
+    RPT_TIME_SLOTS.forEach(t => {
+        const d = reportData.hourly[t] || {};
+        const vehicles = (parseFloat(d.tractor)||0) + (parseFloat(d.pickup)||0) + (parseFloat(d.wheeler)||0) + (parseFloat(d.trailer)||0);
+        const receive = parseFloat(d.receive) || 0;
+        const reject = parseFloat(d.reject) || 0;
+        const rejPct = receive > 0 ? ((reject / receive) * 100).toFixed(2) : '0.00';
+        const manH = parseFloat(d.manHours) || 0;
+        const productivity = manH > 0 ? (receive / manH).toFixed(1) : '-';
+        const statusClass = receive === 0 ? '' : (receive / (manH || 1)) < 8 ? 'status-low' : (receive / (manH || 1)) < 12 ? 'status-mid' : 'status-high';
+        const statusText = receive === 0 ? '-' : (receive / (manH || 1)) < 8 ? '▼ LOW' : (receive / (manH || 1)) < 12 ? '● MID' : '▲ HIGH';
+        const rejClass = parseFloat(rejPct) > 3 ? 'cell-warn' : parseFloat(rejPct) > 0 ? 'cell-calc' : '';
+
+        html += `<tr>
+            <td class="time-cell">${t}</td>
+            <td><input type="number" step="0.01" value="${d.receive||''}" placeholder="-" data-time="${t}" data-field="receive" oninput="updateHourly(this)"></td>
+            <td><input type="number" step="0.001" value="${d.reject||''}" placeholder="-" data-time="${t}" data-field="reject" oninput="updateHourly(this)"></td>
+            <td class="${rejClass}">${receive > 0 ? rejPct + '%' : '-'}</td>
+            <td class="cell-calc">${vehicles || '-'}</td>
+            <td><input type="number" step="1" value="${d.tractor||''}" placeholder="-" data-time="${t}" data-field="tractor" oninput="updateHourly(this)"></td>
+            <td><input type="number" step="1" value="${d.pickup||''}" placeholder="-" data-time="${t}" data-field="pickup" oninput="updateHourly(this)"></td>
+            <td><input type="number" step="1" value="${d.wheeler||''}" placeholder="-" data-time="${t}" data-field="wheeler" oninput="updateHourly(this)"></td>
+            <td><input type="number" step="1" value="${d.trailer||''}" placeholder="-" data-time="${t}" data-field="trailer" oninput="updateHourly(this)"></td>
+            <td><input type="number" step="1" value="${d.manHours||''}" placeholder="-" data-time="${t}" data-field="manHours" oninput="updateHourly(this)"></td>
+            <td class="cell-calc">${productivity}</td>
+            <td class="${statusClass}">${statusText}</td>
+        </tr>`;
+    });
+
+    // Total row
+    const totals = calcHourlyTotals();
+    const totRejPct = totals.receive > 0 ? ((totals.reject / totals.receive) * 100).toFixed(2) : '0.00';
+    const totProd = totals.manHours > 0 ? (totals.receive / totals.manHours).toFixed(1) : '-';
+    const totRejClass = parseFloat(totRejPct) > 3 ? 'cell-warn' : 'cell-calc';
+
+    html += `<tr class="row-total">
+        <td style="font-weight:800;">Total</td>
+        <td class="cell-calc">${totals.receive.toFixed(2)}</td>
+        <td>${totals.reject.toFixed(2)}</td>
+        <td class="${totRejClass}">${totRejPct}%</td>
+        <td class="cell-calc">${totals.vehicles}</td>
+        <td>${totals.tractor}</td>
+        <td>${totals.pickup}</td>
+        <td>${totals.wheeler}</td>
+        <td>${totals.trailer}</td>
+        <td class="cell-calc">${totals.manHours}</td>
+        <td class="cell-calc">${totProd}</td>
+        <td></td>
+    </tr>`;
+
+    tbody.innerHTML = html;
+}
+
+function calcHourlyTotals() {
+    let t = { receive:0, reject:0, tractor:0, pickup:0, wheeler:0, trailer:0, manHours:0, vehicles:0, activeHours:0 };
+    RPT_TIME_SLOTS.forEach(slot => {
+        const d = reportData.hourly[slot] || {};
+        const r = parseFloat(d.receive) || 0;
+        t.receive += r;
+        t.reject += parseFloat(d.reject) || 0;
+        t.tractor += parseInt(d.tractor) || 0;
+        t.pickup += parseInt(d.pickup) || 0;
+        t.wheeler += parseInt(d.wheeler) || 0;
+        t.trailer += parseInt(d.trailer) || 0;
+        t.manHours += parseInt(d.manHours) || 0;
+        if (r > 0) t.activeHours++;
+    });
+    t.vehicles = t.tractor + t.pickup + t.wheeler + t.trailer;
+    return t;
+}
+
+function updateHourly(el) {
+    const time = el.dataset.time;
+    const field = el.dataset.field;
+    if (!reportData.hourly[time]) reportData.hourly[time] = {};
+    reportData.hourly[time][field] = el.value ? parseFloat(el.value) : 0;
+    renderHourlyTable();
+    calcReportKPIs();
+}
+
+function renderSourceTable() {
+    const tbody = document.getElementById('rptSourceBody');
+    let html = '';
+    let totalWeight = 0;
+    let totalPlan = 0;
+
+    RPT_SOURCES.forEach(s => {
+        const d = reportData.sources[s.id] || {};
+        const w = parseFloat(d.weight) || 0;
+        const p = parseFloat(d.plan) || 0;
+        totalWeight += w;
+        totalPlan += p;
+        const diff = w - p;
+        const diffClass = diff < 0 ? 'deficit' : diff > 0 ? 'surplus' : '';
+        const diffText = p > 0 || w > 0 ? (diff < 0 ? '(' + Math.abs(diff).toFixed(2) + ')' : diff.toFixed(2)) : '0.00';
+
+        html += `<tr class="src-row ${s.cls}">
+            <td>${s.name}</td>
+            <td><input type="number" step="0.01" value="${w||''}" placeholder="-" data-src="${s.id}" data-field="weight" oninput="updateSource(this)" style="${w > 0 ? 'color:#dc2626;font-weight:700;' : ''}"></td>
+            <td><input type="number" step="0.01" value="${p||''}" placeholder="-" data-src="${s.id}" data-field="plan" oninput="updateSource(this)"></td>
+            <td class="${diffClass}">${diffText}</td>
+            <td><input type="text" value="${d.batch||''}" placeholder="-" data-src="${s.id}" data-field="batch" oninput="updateSource(this)" style="font-weight:700;color:#0e7490;"></td>
+            <td class="cell-calc">${totalWeight > 0 ? ((w / totalWeight) * 100).toFixed(2) + '%' : '0.00%'}</td>
+        </tr>`;
+    });
+
+    // Total row
+    const totalDiff = totalWeight - totalPlan;
+    const totalDiffClass = totalDiff < 0 ? 'deficit' : 'surplus';
+    html += `<tr class="row-total" style="background:#fff0f6;">
+        <td style="font-weight:800;text-align:left;padding-left:12px;">รวมรับเข้า</td>
+        <td class="cell-calc" style="font-size:0.85rem;">${totalWeight.toFixed(2)}</td>
+        <td>${totalPlan.toFixed(2)}</td>
+        <td class="${totalDiffClass}">${totalDiff < 0 ? '(' + Math.abs(totalDiff).toFixed(2) + ')' : totalDiff.toFixed(2)}</td>
+        <td></td>
+        <td></td>
+    </tr>`;
+
+    // Rejection total
+    const totals = calcHourlyTotals();
+    const rejPct = totalWeight > 0 ? ((totals.reject / totalWeight) * 100).toFixed(2) : '0.00';
+    html += `<tr style="background:#fef2f2;">
+        <td style="font-weight:700;text-align:left;padding-left:12px;color:#dc2626;">ปาล์มไม่ได้คุณภาพคัดคืน</td>
+        <td colspan="2" class="cell-warn">${totals.reject.toFixed(2)} ตัน</td>
+        <td colspan="3" class="cell-warn">${rejPct}%</td>
+    </tr>`;
+
+    tbody.innerHTML = html;
+}
+
+function updateSource(el) {
+    const src = el.dataset.src;
+    const field = el.dataset.field;
+    if (!reportData.sources[src]) reportData.sources[src] = {};
+    reportData.sources[src][field] = field === 'batch' ? el.value : (el.value ? parseFloat(el.value) : 0);
+    renderSourceTable();
+    calcReportKPIs();
+}
+
+function renderQualitySection() {
+    // Previous day
+    const prevBody = document.getElementById('rptPrevDayBody');
+    let prevHtml = '';
+    RPT_PREV_DAY_ROWS.forEach(r => {
+        const val = reportData.prevDay[r] || 0;
+        prevHtml += `<tr>
+            <td style="text-align:left;padding-left:10px;font-weight:600;">${r}</td>
+            <td><input type="number" step="0.001" value="${val||''}" placeholder="0" data-prev="${r}" oninput="updatePrevDay(this)" style="font-weight:700;"></td>
+            <td style="font-size:0.7rem;color:#718096;">ตัน</td>
+        </tr>`;
+    });
+    // Total rejection
+    const totalRej = RPT_PREV_DAY_ROWS.slice(1).reduce((s, r) => s + (parseFloat(reportData.prevDay[r]) || 0), 0);
+    prevHtml += `<tr style="background:#fef2f2;">
+        <td style="text-align:left;padding-left:10px;font-weight:800;color:#dc2626;">รวมคัดคืน</td>
+        <td style="font-weight:800;color:#dc2626;">${totalRej.toFixed(2)}</td>
+        <td style="font-size:0.7rem;color:#718096;">ตัน</td>
+    </tr>`;
+    prevBody.innerHTML = prevHtml;
+
+    // Quality
+    const qualBody = document.getElementById('rptQualityBody');
+    let qualHtml = '';
+    RPT_QUALITY_SOURCES.forEach(q => {
+        const val = reportData.quality[q] || 0;
+        qualHtml += `<tr>
+            <td style="text-align:left;padding-left:10px;font-weight:600;">${q}</td>
+            <td><input type="number" step="0.01" value="${val||''}" placeholder="0.00" data-qual="${q}" oninput="updateQuality(this)" style="font-weight:700;"></td>
+            <td style="font-size:0.7rem;color:#718096;">บ./กก.</td>
+        </tr>`;
+    });
+    // Average
+    const qualVals = RPT_QUALITY_SOURCES.map(q => parseFloat(reportData.quality[q]) || 0).filter(v => v > 0);
+    const qualAvg = qualVals.length > 0 ? (qualVals.reduce((a,b)=>a+b,0) / qualVals.length).toFixed(2) : '0.00';
+    qualHtml += `<tr style="background:#fefce8;">
+        <td style="text-align:left;padding-left:10px;font-weight:800;">ค่าคุณภาพเฉลี่ย</td>
+        <td style="font-weight:800;color:#d97706;">${qualAvg}</td>
+        <td style="font-size:0.7rem;color:#718096;">บ./กก.</td>
+    </tr>`;
+    qualBody.innerHTML = qualHtml;
+
+    // Stock balance
+    document.getElementById('rptStockBalance').value = reportData.stockBalance || '';
+}
+
+function updatePrevDay(el) {
+    reportData.prevDay[el.dataset.prev] = el.value ? parseFloat(el.value) : 0;
+    renderQualitySection();
+}
+function updateQuality(el) {
+    reportData.quality[el.dataset.qual] = el.value ? parseFloat(el.value) : 0;
+    renderQualitySection();
+}
+
+function calcReportKPIs() {
+    const totals = calcHourlyTotals();
+    const srcTotal = RPT_SOURCES.reduce((s, src) => s + (parseFloat(reportData.sources[src.id]?.weight) || 0), 0);
+    const totalReceive = srcTotal || totals.receive;
+    const workingHours = totals.activeHours;
+    const throughput = workingHours > 0 ? (totalReceive / workingHours).toFixed(2) : '0.00';
+    const rejPct = totalReceive > 0 ? ((totals.reject / totalReceive) * 100).toFixed(2) : '0.00';
+    const stockBalance = parseFloat(document.getElementById('rptStockBalance')?.value) || reportData.stockBalance || 0;
+    reportData.stockBalance = stockBalance;
+    const avgLoad = totals.vehicles > 0 ? (totalReceive / totals.vehicles).toFixed(2) : '0.00';
+    const efficiency = totals.manHours > 0 ? (totalReceive / totals.manHours).toFixed(2) : '0.00';
+
+    const kpis = [
+        { label:'Daily Throughput (Ton/Hr)', value: throughput, target:'>60-90 Ton/hr', warn: parseFloat(throughput) < 60, good: parseFloat(throughput) >= 60 },
+        { label:'Total FFB Receive (Ton)', value: totalReceive.toFixed(2), target:'850 Ton', warn: totalReceive < 500, good: totalReceive >= 850 },
+        { label:'Avg Rejection %', value: rejPct + '%', target:'<2-3%', warn: parseFloat(rejPct) > 3, good: parseFloat(rejPct) <= 2 },
+        { label:'Working Hours', value: workingHours + '.00', target:'10 hr', warn: workingHours < 6, good: workingHours >= 10 },
+        { label:'FFB Aging/Stock Balance', value: stockBalance.toFixed(2), target:'500-700 Ton', warn: stockBalance > 700, good: stockBalance >= 500 && stockBalance <= 700 },
+        { label:'Avg Load/Vehicle', value: avgLoad, target:'>12 Ton/Hr', warn: parseFloat(avgLoad) < 12 && parseFloat(avgLoad) > 0, good: parseFloat(avgLoad) >= 12 },
+        { label:'Daily Efficiency (Ton/Staff/Hr)', value: efficiency, target:'8-15 ton', warn: parseFloat(efficiency) < 8 && parseFloat(efficiency) > 0, good: parseFloat(efficiency) >= 8 }
+    ];
+
+    const grid = document.getElementById('rptKpiGrid');
+    grid.innerHTML = kpis.map(k => `
+        <div class="rpt-kpi ${k.warn ? 'warn' : k.good ? 'good' : ''}">
+            <div class="rpt-kpi-label">${k.label}</div>
+            <div class="rpt-kpi-value" style="${k.warn ? 'color:#dc2626;' : k.good ? 'color:#16a34a;' : ''}">${k.value}</div>
+            <div class="rpt-kpi-target">${k.target}</div>
+        </div>
+    `).join('');
+}
+
+async function saveReport() {
+    const date = currentDate;
+    // Save to localStorage
+    localStorage.setItem('ffb3_report_' + date, JSON.stringify(reportData));
+    // Save to Firebase
+    try {
+        await fbDb.ref('reports/' + date.replace(/-/g,'')).set(reportData);
+        showToast('💾 บันทึกรายงานเรียบร้อย');
+    } catch(e) {
+        console.error('Report save error:', e);
+        showToast('⚠️ บันทึก Firebase ผิดพลาด');
+    }
 }
 
 init();
