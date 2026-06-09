@@ -4522,8 +4522,54 @@ function updateHourly(el) {
     const field = el.dataset.field;
     if (!reportData.hourly[time]) reportData.hourly[time] = {};
     reportData.hourly[time][field] = el.value ? parseFloat(el.value) : 0;
-    renderHourlyTable();
+
+    // Update only computed cells in this row (don't re-render table)
+    const row = el.closest('tr');
+    if (row) {
+        const d = reportData.hourly[time];
+        const receive = parseFloat(d.receive) || 0;
+        const reject = parseFloat(d.reject) || 0;
+        const vehicles = (parseFloat(d.tractor)||0) + (parseFloat(d.pickup)||0) + (parseFloat(d.wheeler)||0) + (parseFloat(d.trailer)||0);
+        const manH = parseFloat(d.manHours) || 0;
+        const rejPct = receive > 0 ? ((reject / receive) * 100).toFixed(2) + '%' : '-';
+        const productivity = manH > 0 ? (receive / manH).toFixed(1) : '-';
+        const prodVal = manH > 0 ? receive / manH : 0;
+        const statusText = receive === 0 ? '-' : prodVal < 8 ? '▼ LOW' : prodVal < 12 ? '● MID' : '▲ HIGH';
+
+        const cells = row.querySelectorAll('td');
+        // cells: 0=time, 1=receive(input), 2=reject(input), 3=rejPct, 4=vehicleTotal, 5-8=vehicle inputs, 9=manHours(input), 10=productivity, 11=status
+        if (cells[3]) cells[3].textContent = rejPct;
+        if (cells[3]) cells[3].className = parseFloat(d.reject) > 0 && receive > 0 && (reject/receive*100) > 3 ? 'cell-warn' : 'cell-calc';
+        if (cells[4]) { cells[4].textContent = vehicles || '-'; cells[4].className = 'cell-calc'; }
+        if (cells[10]) { cells[10].textContent = productivity; cells[10].className = 'cell-calc'; }
+        if (cells[11]) {
+            cells[11].textContent = statusText;
+            cells[11].className = receive === 0 ? '' : prodVal < 8 ? 'status-low' : prodVal < 12 ? 'status-mid' : 'status-high';
+        }
+    }
+
+    // Update total row
+    updateHourlyTotalRow();
     calcReportKPIs();
+}
+
+function updateHourlyTotalRow() {
+    const totals = calcHourlyTotals();
+    const totalRow = document.querySelector('#rptHourlyTable .row-total');
+    if (!totalRow) return;
+    const cells = totalRow.querySelectorAll('td');
+    const totRejPct = totals.receive > 0 ? ((totals.reject / totals.receive) * 100).toFixed(2) : '0.00';
+    const totProd = totals.manHours > 0 ? (totals.receive / totals.manHours).toFixed(1) : '-';
+    if (cells[1]) cells[1].textContent = totals.receive.toFixed(2);
+    if (cells[2]) cells[2].textContent = totals.reject.toFixed(2);
+    if (cells[3]) { cells[3].textContent = totRejPct + '%'; cells[3].className = parseFloat(totRejPct) > 3 ? 'cell-warn' : 'cell-calc'; }
+    if (cells[4]) cells[4].textContent = totals.vehicles;
+    if (cells[5]) cells[5].textContent = totals.tractor;
+    if (cells[6]) cells[6].textContent = totals.pickup;
+    if (cells[7]) cells[7].textContent = totals.wheeler;
+    if (cells[8]) cells[8].textContent = totals.trailer;
+    if (cells[9]) cells[9].textContent = totals.manHours;
+    if (cells[10]) cells[10].textContent = totProd;
 }
 
 function renderSourceTable() {
@@ -4581,8 +4627,44 @@ function updateSource(el) {
     const field = el.dataset.field;
     if (!reportData.sources[src]) reportData.sources[src] = {};
     reportData.sources[src][field] = field === 'batch' ? el.value : (el.value ? parseFloat(el.value) : 0);
-    renderSourceTable();
+
+    // Update computed cells in this row without re-rendering
+    const row = el.closest('tr');
+    if (row && field !== 'batch') {
+        const d = reportData.sources[src];
+        const w = parseFloat(d.weight) || 0;
+        const p = parseFloat(d.plan) || 0;
+        const diff = w - p;
+        const diffText = (p > 0 || w > 0) ? (diff < 0 ? '(' + Math.abs(diff).toFixed(2) + ')' : diff.toFixed(2)) : '0.00';
+        const cells = row.querySelectorAll('td');
+        if (cells[3]) { cells[3].textContent = diffText; cells[3].className = diff < 0 ? 'deficit' : diff > 0 ? 'surplus' : ''; }
+        // Recalc percentages for all source rows
+        const totalWeight = RPT_SOURCES.reduce((s, src) => s + (parseFloat(reportData.sources[src.id]?.weight) || 0), 0);
+        document.querySelectorAll('#rptSourceBody tr.src-row').forEach(r => {
+            const srcId = r.querySelector('input[data-field="weight"]')?.dataset.src;
+            if (srcId) {
+                const sw = parseFloat(reportData.sources[srcId]?.weight) || 0;
+                const pctCell = r.querySelectorAll('td')[5];
+                if (pctCell) pctCell.textContent = totalWeight > 0 ? ((sw / totalWeight) * 100).toFixed(2) + '%' : '0.00%';
+            }
+        });
+        // Update total row
+        updateSourceTotalRow();
+    }
     calcReportKPIs();
+}
+
+function updateSourceTotalRow() {
+    const totalWeight = RPT_SOURCES.reduce((s, src) => s + (parseFloat(reportData.sources[src.id]?.weight) || 0), 0);
+    const totalPlan = RPT_SOURCES.reduce((s, src) => s + (parseFloat(reportData.sources[src.id]?.plan) || 0), 0);
+    const totalDiff = totalWeight - totalPlan;
+    const rows = document.querySelectorAll('#rptSourceBody tr.row-total');
+    if (rows[0]) {
+        const cells = rows[0].querySelectorAll('td');
+        if (cells[1]) cells[1].textContent = totalWeight.toFixed(2);
+        if (cells[2]) cells[2].textContent = totalPlan.toFixed(2);
+        if (cells[3]) { cells[3].textContent = totalDiff < 0 ? '(' + Math.abs(totalDiff).toFixed(2) + ')' : totalDiff.toFixed(2); cells[3].className = totalDiff < 0 ? 'deficit' : 'surplus'; }
+    }
 }
 
 function renderQualitySection() {
@@ -4633,11 +4715,18 @@ function renderQualitySection() {
 
 function updatePrevDay(el) {
     reportData.prevDay[el.dataset.prev] = el.value ? parseFloat(el.value) : 0;
-    renderQualitySection();
+    // Update total only
+    const totalRej = RPT_PREV_DAY_ROWS.slice(1).reduce((s, r) => s + (parseFloat(reportData.prevDay[r]) || 0), 0);
+    const totalRow = document.querySelector('#rptPrevDayBody tr:last-child td:nth-child(2)');
+    if (totalRow) totalRow.textContent = totalRej.toFixed(2);
 }
 function updateQuality(el) {
     reportData.quality[el.dataset.qual] = el.value ? parseFloat(el.value) : 0;
-    renderQualitySection();
+    // Update average only
+    const qualVals = RPT_QUALITY_SOURCES.map(q => parseFloat(reportData.quality[q]) || 0).filter(v => v > 0);
+    const qualAvg = qualVals.length > 0 ? (qualVals.reduce((a,b)=>a+b,0) / qualVals.length).toFixed(2) : '0.00';
+    const avgRow = document.querySelector('#rptQualityBody tr:last-child td:nth-child(2)');
+    if (avgRow) avgRow.textContent = qualAvg;
 }
 
 function calcReportKPIs() {
