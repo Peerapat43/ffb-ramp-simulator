@@ -4337,11 +4337,13 @@ const RPT_PREV_DAY_ROWS = ['รับเข้า','คัดคืนราย�
 
 let reportData = {};
 
+let pasteHandlerInit = false;
 function openReport() {
     document.getElementById('reportOverlay').classList.add('active');
     document.body.style.overflow = 'hidden';
     document.getElementById('rptDateLabel').textContent = 'DATE ' + formatThaiDate(currentDate);
     loadReportData(currentDate);
+    if (!pasteHandlerInit) { initPasteHandler(); pasteHandlerInit = true; }
 }
 
 function closeReport() {
@@ -4727,6 +4729,72 @@ function updateQuality(el) {
     const qualAvg = qualVals.length > 0 ? (qualVals.reduce((a,b)=>a+b,0) / qualVals.length).toFixed(2) : '0.00';
     const avgRow = document.querySelector('#rptQualityBody tr:last-child td:nth-child(2)');
     if (avgRow) avgRow.textContent = qualAvg;
+}
+
+// ========= EXCEL PASTE HANDLER =========
+function initPasteHandler() {
+    document.getElementById('reportOverlay').addEventListener('paste', function(e) {
+        const active = document.activeElement;
+        if (!active || active.tagName !== 'INPUT') return;
+        const table = active.closest('table');
+        if (!table) return;
+
+        const clipText = (e.clipboardData || window.clipboardData).getData('text');
+        if (!clipText) return;
+
+        // Parse Excel clipboard: rows separated by newline, columns by tab
+        const rows = clipText.trim().split(/\r?\n/).map(r => r.split('\t'));
+        if (rows.length === 1 && rows[0].length === 1) return; // single value = normal paste
+
+        e.preventDefault();
+
+        // Collect all input cells in the table, organized by row
+        const tableRows = table.querySelectorAll('tbody tr:not(.row-total)');
+        const inputGrid = [];
+        tableRows.forEach(tr => {
+            const inputs = tr.querySelectorAll('input');
+            if (inputs.length) inputGrid.push([...inputs]);
+        });
+
+        // Find starting position
+        let startRow = -1, startCol = -1;
+        inputGrid.forEach((row, ri) => {
+            row.forEach((inp, ci) => {
+                if (inp === active) { startRow = ri; startCol = ci; }
+            });
+        });
+        if (startRow === -1) return;
+
+        // Fill values
+        const changed = [];
+        rows.forEach((dataRow, ri) => {
+            const targetRow = startRow + ri;
+            if (targetRow >= inputGrid.length) return;
+            let colOffset = 0;
+            dataRow.forEach((val) => {
+                const targetCol = startCol + colOffset;
+                if (targetCol >= inputGrid[targetRow].length) return;
+                const inp = inputGrid[targetRow][targetCol];
+                const cleanVal = val.replace(/[,\s]/g, '').replace(/[()]/g, '');
+                const numVal = parseFloat(cleanVal);
+                if (inp.type === 'number') {
+                    inp.value = isNaN(numVal) ? '' : numVal;
+                } else {
+                    inp.value = val.trim();
+                }
+                inp.dispatchEvent(new Event('input', { bubbles: true }));
+                changed.push(inp);
+                colOffset++;
+            });
+        });
+
+        if (changed.length) {
+            showToast('📋 วาง ' + changed.length + ' ช่องจาก Excel สำเร็จ');
+            // Full recalculate
+            updateHourlyTotalRow();
+            calcReportKPIs();
+        }
+    });
 }
 
 function calcReportKPIs() {
